@@ -2,6 +2,8 @@
 class ALU:
     from CPU.flags import Flags
     
+    #In general ALU is yet to manag e the flags, and the binary values and operations
+
     _instance = None
     def __new__(cls):
         if cls._instance is None:
@@ -26,11 +28,17 @@ class ALU:
     def divide(self, a, b):
         if b == 0:
             raise ValueError("Cannot divide by zero")
-        return a / b
+        return a // b
     
     def modulo(self, a, b):
         if b == 0:
             raise ValueError("Cannot modulo by zero")
         return a % b
+    
+    def increment(self, a):
+        return a + 1
+    
+    def decrement(self, a):
+        return a - 1
 
 alu = ALU()

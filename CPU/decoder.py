@@ -25,142 +25,256 @@ class Decoder:
                 
         instruction = CurrentInstructionRegister(instruction).current_instruction()
 
+        testinst = "111XXXXXXXXXXXXX" #This instruction will load a value in memory
+
+
+
         print(f"Decoding instruction: {instruction}")
 
 
         match instruction:
+            
             #Memory instructions
-            case "LOAD":
+            #LOAD
+            case instruction if instruction[0:2] == "11":
                 #TODO: Implement load instruction, need ram module first
+                register = instruction[2]
+                address = instruction[3:]
+                print("This is a load instruction, but it is not implemented yet.")
+                print("Load memory add in register"+str(register)+" with value "+str(address))
                 pass
-            case "LOADV":
-                self.load("A", 2000)
+            #LOADV
+            case instruction if instruction[0:2] == "12":
                 #TODO: Implement loadv instruction, need to implement registers handling first
-            case "STORE":
-                #TODO: Implement store instruction, need ram module first
+                register = instruction[2]
+                value = instruction[3:]
+                print("This is a loadv instruction, but it is not implemented yet.")
+                print("Load value "+value+" in register "+register)
                 pass
-            case "PUSH":
+            #STORE
+            case instruction if instruction[0:2] == "13":
+                #TODO: Implement store instruction, need ram module first
+                register = instruction[2]
+                address = instruction[3:]
+                print("This is a store instruction, but it is not implemented yet.")
+                print("Store value of register "+str(register)+" in memory address "+str(address))
+                pass
+            #PUSH
+            case instruction if instruction[0:15] == "10000000000000":
+                register = instruction[-1]
+                print("This is a push instruction, but it is not implemented yet.")
+                print("Push value of register "+str(register)+" on the stack")
                 #TODO: Implement push instruction, need ram module first
                 pass
-            case "POP":
+            #POP
+            case instruction if instruction[0:15] == "10000000000001":
+                register = instruction[-1]
+                print("This is a pop instruction, but it is not implemented yet.")
+                print("Pop value from stack into register "+str(register))
                 #TODO: Implement pop instruction, need ram module first
                 pass
-            case "LEA":
+            #LEA
+            case instruction if instruction[0:2] == "16":
                 #TODO: Implement lea instruction, need ram module first
                 # LEA loads a memory address into a register, so we need to implement memory addressing first
+                register = instruction[2]
+                address = instruction[3:]
+                print("This is a lea instruction, but it is not implemented yet.")
+                print("Load memory address "+str(address)+" in register "+str(register))
                 pass
             #Arithmetic instructions
-            case "ADD":
-                result = alu.add(registers.values["0"], registers.values["1"])
-                print(f"ALU Result: {result}")
-            case "SUB":
-                result = alu.subtract(registers.values["0"], registers.values["1"])
-                print(f"ALU Result: {result}")
-            case "MUL":
-                result = alu.multiply(registers.values["0"], registers.values["1"])
-                print(f"ALU Result: {result}")
-            case "DIV":
-                result = alu.divide(registers.values["0"], registers.values["1"])
-                print(f"ALU Result: {result}")
-            case "MOD":
-                result = alu.modulo(registers.values["0"], registers.values["1"])
-                print(f"ALU Result: {result}")
-            #Copy command on 2 registers
-            case "CPY":
-                registers.values["2"] = registers.values["0"]
-                print(f"Copied value from register 0 to register 2: {registers.values['2']}")
-            #Increment and decrement commands on a register
-            case "INC":
-                registers.values["0"] += 1
-                print(f"Incremented value in register 0: {registers.values['0']}")
-            case "DEC":
-                registers.values["0"] -= 1
-                print(f"Decremented value in register 0: {registers.values['0']}")
-            case "CMP":
+            #ADD
+            case instruction if instruction[0:14] == "20000000000001":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = alu.add(registers.values[register1], registers.values[register2])
+                print(f"ALU add Result: {registers.values[register1]} in register {register1}")
+            #SUB
+            case instruction if instruction[0:14] == "20000000000002":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = alu.subtract(registers.values[register1], registers.values[register2])
+                print(f"ALU subtract Result: {registers.values[register1]} in register {register1}")
+            #MUL
+            case instruction if instruction[0:14] == "20000000000003":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = alu.multiply(registers.values[register1], registers.values[register2])
+                print(f"ALU multiply Result: {registers.values[register1]} in register {register1}")
+            #DIV
+            case instruction if instruction[0:14] == "20000000000004":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = alu.divide(registers.values[register1], registers.values[register2])
+                print(f"ALU divide Result: {registers.values[register1]} in register {register1}")
+            #MOD
+            case instruction if instruction[0:14] == "20000000000005":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = alu.modulo(registers.values[register1], registers.values[register2])
+                print(f"ALU modulo Result: {registers.values[register1]} in register {register1}")
+            #CPY Copy command, copy value from second register to first another
+            case instruction if instruction[0:14] == "20000000000006":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = registers.values[register2]
+                print(f"Copied value from register {register2} to register {register1}: {registers.values[register1]}")
+            #INC
+            case instruction if instruction[0:14] == "20000000000007":
+                register = instruction[14]
+                registers.values[register] = alu.increment(registers.values[register])
+                print(f"Incremented value in register {register}: {registers.values[register]}")
+            #DEC
+            case instruction if instruction[0:14] == "20000000000008":
+                register = instruction[14]
+                registers.values[register] = alu.decrement(registers.values[register])
+                print(f"Decremented value in register {register}: {registers.values[register]}")
+            #CMP
+            case instruction if instruction[0:14] == "2000000000000E":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                value = alu.subtract(registers.values[register1], registers.values[register2])
                 #TODO: Implement cmp instruction, substraction, it only set flags
                 pass
-            case "TEST":
+            #TEST
+            case instruction if instruction[0:14] == "2000000000000F":
+                register1 = instruction[14]
+                register2 = instruction[15]
                 #TODO Implement test instruction, and instruction that only set flags
                 pass
-            case "AND":
-                #TODO Implement and instruction, bitwise and
+            #AND
+            case instruction if instruction[0:14] == "20000000000011":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = registers.values[register1] & registers.values[register2]
+                print(f"AND Result: {registers.values[register1]} in register {register1}")
+            #OR
+            case instruction if instruction[0:14] == "20000000000012":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = registers.values[register1] | registers.values[register2]
+                print(f"OR Result: {registers.values[register1]} in register {register1}")
+            #XOR
+            case instruction if instruction[0:14] == "20000000000013":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = registers.values[register1] ^ registers.values[register2]
+                print(f"XOR Result: {registers.values[register1]} in register {register1}")
+            #NOT
+            case instruction if instruction[0:14] == "20000000000014":
+                register = instruction[14]
+                registers.values[register] = ~registers.values[register]
+                print(f"NOT Result: {registers.values[register]} in register {register}")
+            #NAND
+            case instruction if instruction[0:14] == "20000000000015":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = ~(registers.values[register1] & registers.values[register2])
+                print(f"NAND Result: {registers.values[register1]} in register {register1}")
+            #NOR
+            case instruction if instruction[0:14] == "20000000000016":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                registers.values[register1] = ~(registers.values[register1] | registers.values[register2])
+                print(f"NOR Result: {registers.values[register1]} in register {register1}")
+            #SHIFTLEFT
+            case instruction if instruction[0:14] == "30000000000001":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                #Left shift the value in register1 by the number of bits specified in register2
+                registers.values[register1] = registers.values[register1] << registers.values[register2]
+                print(f"Left Shift Result: {registers.values[register1]}")
+                print(bin(registers.values[register1]))
+            #SHIFTRIGHT
+            case instruction if instruction[0:14] == "30000000000002":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                #Right shift the value in register1 by the number of bits specified in register2
+                registers.values[register1] = registers.values[register1] >> registers.values[register2]
+                print(f"Right Shift Result: {registers.values[register1]}")
+                print(bin(registers.values[register1]))
+            #ROL ROTATION LEFT
+            
+            case instruction if instruction[0:14] == "30000000000003":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                #Rotate left the value in register1 by the number of bits specified in register2
+                registers.values[register1] = (registers.values[register1] << registers.values[register2]) | (registers.values[register1] >> (32 - registers.values[register2]))
+                print(f"Rotate Left Result: {registers.values[register1]}")
+            #ROR ROTATION RIGHT
+            case instruction if instruction[0:14] == "30000000000004":
+                register1 = instruction[14]
+                register2 = instruction[15]
+                #Rotate right the value in register1 by the number of bits specified in register2
+                registers.values[register1] = (registers.values[register1] >> registers.values[register2]) | (registers.values[register1] << (32 - registers.values[register2]))
+                print(f"Rotate Right Result: {registers.values[register1]}")
+            #JUMP
+            case instruction if instruction[0:3] == "700":
+                address = instruction[3:]
+                #TODO Implement jmp instruction, jump to address, memory addressing needs to be implemented first.
                 pass
-            case "OR":
-                #TODO Implement or instruction, bitwise or
+            #JZ Jump if Zero flag is set
+            case instruction if instruction[0:3] == "701":
+                address = instruction[3:]
+                #TODO Implement jz instruction, jump if zero flag is set, memory addressing needs to be implemented first-
                 pass
-            case "XOR":
-                #TODO Implement xor instruction, bitwise xor
-                pass
-            case "NOT":
-                #TODO Implement not instruction, bitwise not
-                pass
-            case "NAND":
-                #TODO Implement nand instruction, bitwise nand
-                pass
-            case "NOR":
-                #TODO Implement nor instruction, bitwise nor
-                pass
-            case "SHL":
-                #TODO Implement shl instruction, bitwise shift left
-                pass
-            case "SHR":
-                #TODO Implement shr instruction, bitwise shift right
-                pass
-            case "ROL":
-                #TODO Implement rol instruction, bitwise rotate left
-                pass
-            case "ROR":
-                #TODO Implement ror instruction, bitwise rotate right
-                pass
-            case "JMP":
-                #TODO Implement jmp instruction, jump to address
-                pass
-            case "JZ":
-                #TODO Implement jz instruction, jump if zero flag is set
-                pass
-            case "JNZ":
+            #JNZ Jump if Zero flag is not set
+            case instruction if instruction[0:3] == "702":
+                address = instruction[3:]
                 #TODO Implement jnz instruction, jump if zero flag is not set
                 pass
-            case "JP":
+            #JP Jump if Positive flag is set
+            case instruction if instruction[0:3] == "703":
+                address = instruction[3:]
                 #TODO Implement jp instruction, jump if positive flag is set
                 pass
-            case "JN":
+            #JN Jump if Negative flag is set
+            case instruction if instruction[0:3] == "704":
+                address = instruction[3:]
                 #TODO Implement jn instruction, jump if negative flag is set
                 pass
-            case "JC":
+            #JC Jump if Carry flag is set
+            case instruction if instruction[0:3] == "705":
+                address = instruction[3:]
                 #TODO Implement jc instruction, jump if carry flag is set
                 pass
-            case "JNC":
+            #JNC Jump if Carry flag is not set
+            case instruction if instruction[0:3] == "706":
                 #TODO Implement jnc instruction, jump if carry flag is not set
                 pass
-            case "JO":
+            #JO Jump if Overflow flag is set
+            case instruction if instruction[0:3] == "707":
                 #TODO Implement jo instruction, jump if overflow flag is set
                 pass
-            case "JNO":
+            #JNO Jump if Overflow flag is not set
+            case instruction if instruction[0:3] == "708":
                 #TODO Implement jno instruction, jump if overflow flag is not set
                 pass
-            case "CALL":
+            #CALL a subroutine at address
+            case instruction if instruction[0:3] == "709":
                 #TODO Implement call instruction, call subroutine at address
                 pass
-            case "RET":
+            #RET Return from subroutine
+            case instruction if instruction[0:16] == "70A0000000000000":
                 #TODO Implement ret instruction, return from subroutine
                 pass
-            case "CLI":
-                #TODO Implement cli instruction, clear interrupt flag
+            
+            case instruction if instruction[0:16] == "0000000000000000":
+                #TODO Stop the program
                 pass
-            case "STI":
-                #TODO Implement sti instruction, set interrupt flag
+
+            #Interrupt instructions, these functions will not be implemented in the foreseeable future, since they are related to interrupts and I do not plan on implementing interrupts in this CPU simulation, but they are declared here for completeness and future implementation.
+            #CLI Clear Interrupt Flag
+            case instruction if instruction[0:16] == "0000000000000001":
                 pass
-            case "NOP":
-                #TODO Implement nop instruction, no operation
+            #STI Set Interrupt Flag
+            case instruction if instruction[0:16] == "0000000000000002":
                 pass
-            case "IN":
-                #TODO Implement in instruction, input from port
-                #Note: I do not think this instruction is needec, but is declared because it was defined, since it is an I/O related instruction, and the computer won't need it, I do not think this will be implemented in the foreseeable future.
+            #IN Port Input
+            case instruction if instruction[0:13] == "9000000000000":
                 pass
-            case "OUT":
-                #TODO Implement out instruction, output to port
-                #Note: Same as IN instruction. 
+            #OUT Port Output
+            case instruction if instruction[0:13] == "9000000000001":
                 pass
 
 
