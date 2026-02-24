@@ -3,6 +3,8 @@ from CPU.alu import alu
 from CPU.pc import program_counter
 from CPU.registers import registers
 from CPU.cir import CurrentInstructionRegister
+from RAM.data_ram import data_ram
+from RAM.stack import stack_ram
 
 class Decoder:
 
@@ -25,64 +27,50 @@ class Decoder:
                 
         instruction = CurrentInstructionRegister(instruction).current_instruction()
 
-        testinst = "111XXXXXXXXXXXXX" #This instruction will load a value in memory
-
-
 
         print(f"Decoding instruction: {instruction}")
 
-
         match instruction:
-            
-            #Memory instructions
             #LOAD
             case instruction if instruction[0:2] == "11":
-                #TODO: Implement load instruction, need ram module first
                 register = instruction[2]
                 address = instruction[3:]
-                print("This is a load instruction, but it is not implemented yet.")
-                print("Load memory add in register"+str(register)+" with value "+str(address))
-                pass
+                registers.values[register] = address
+
+                print("Load memory address "+str(address)+" in register "+str(register))
             #LOADV
             case instruction if instruction[0:2] == "12":
-                #TODO: Implement loadv instruction, need to implement registers handling first
                 register = instruction[2]
                 value = instruction[3:]
-                print("This is a loadv instruction, but it is not implemented yet.")
+                registers.values[register] = value
+
                 print("Load value "+value+" in register "+register)
-                pass
             #STORE
             case instruction if instruction[0:2] == "13":
-                #TODO: Implement store instruction, need ram module first
                 register = instruction[2]
                 address = instruction[3:]
-                print("This is a store instruction, but it is not implemented yet.")
+                data_ram.write(address, registers.values[register])
+
                 print("Store value of register "+str(register)+" in memory address "+str(address))
-                pass
             #PUSH
             case instruction if instruction[0:15] == "10000000000000":
                 register = instruction[-1]
-                print("This is a push instruction, but it is not implemented yet.")
+                stack_ram.push(registers.values[register])
                 print("Push value of register "+str(register)+" on the stack")
-                #TODO: Implement push instruction, need ram module first
-                pass
+                #TODO: Implement push instruction, need stack module first
             #POP
             case instruction if instruction[0:15] == "10000000000001":
                 register = instruction[-1]
-                print("This is a pop instruction, but it is not implemented yet.")
+                stack_ram.pop()
                 print("Pop value from stack into register "+str(register))
-                #TODO: Implement pop instruction, need ram module first
-                pass
             #LEA
             case instruction if instruction[0:2] == "16":
-                #TODO: Implement lea instruction, need ram module first
-                # LEA loads a memory address into a register, so we need to implement memory addressing first
                 register = instruction[2]
                 address = instruction[3:]
-                print("This is a lea instruction, but it is not implemented yet.")
+                registers.values[register] = data_ram.read(address)
                 print("Load memory address "+str(address)+" in register "+str(register))
-                pass
-            #Arithmetic instructions
+            #Arithmetic instructions, about these bitwise instructions
+            #If I don't want to use numbers, but binary we have to modify this
             #ADD
             case instruction if instruction[0:14] == "20000000000001":
                 register1 = instruction[14]
@@ -133,15 +121,13 @@ class Decoder:
             case instruction if instruction[0:14] == "2000000000000E":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                value = alu.subtract(registers.values[register1], registers.values[register2])
-                #TODO: Implement cmp instruction, substraction, it only set flags
-                pass
+                alu.subtract(registers.values[register1], registers.values[register2])
+                #TODO: Implement cmp instruction, substraction, it only set flags, it has to be implemented in ALU
             #TEST
             case instruction if instruction[0:14] == "2000000000000F":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                #TODO Implement test instruction, and instruction that only set flags
-                pass
+                #TODO Implement test instruction, and instruction that only set flags, has to be implemented in ALU    
             #AND
             case instruction if instruction[0:14] == "20000000000011":
                 register1 = instruction[14]
@@ -194,7 +180,6 @@ class Decoder:
                 print(f"Right Shift Result: {registers.values[register1]}")
                 print(bin(registers.values[register1]))
             #ROL ROTATION LEFT
-            
             case instruction if instruction[0:14] == "30000000000003":
                 register1 = instruction[14]
                 register2 = instruction[15]

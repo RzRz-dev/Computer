@@ -1,6 +1,6 @@
 class RegisterBank:
+    #This piece of code makes the object singleton.
     _instance = None
-
     def __new__(cls):
 
         cls.values = {
