@@ -16,6 +16,7 @@ class DataRAM:
     def write(self, address, value):
         self.storage[address] = value
 
-        
+    def __str__(self):
+        return f"DataRAM Storage: {self.storage}"
 
 data_ram = DataRAM()

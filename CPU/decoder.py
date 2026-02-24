@@ -1,8 +1,5 @@
-from CPU.flags import flags
 from CPU.alu import alu
-from CPU.pc import program_counter
 from CPU.registers import registers
-from CPU.cir import CurrentInstructionRegister
 from RAM.data_ram import data_ram
 from RAM.stack import stack_ram
 
@@ -25,7 +22,7 @@ class Decoder:
     
     def decode(self, instruction):
                 
-        instruction = CurrentInstructionRegister(instruction).current_instruction()
+    
 
 
         print(f"Decoding instruction: {instruction}")
@@ -122,80 +119,80 @@ class Decoder:
                 register1 = instruction[14]
                 register2 = instruction[15]
                 alu.subtract(registers.values[register1], registers.values[register2])
-                #TODO: Implement cmp instruction, substraction, it only set flags, it has to be implemented in ALU
+                print(f"Compared value in register {register1} with value in register {register2}")
             #TEST
             case instruction if instruction[0:14] == "2000000000000F":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                #TODO Implement test instruction, and instruction that only set flags, has to be implemented in ALU    
+                alu.bitwise_and(registers.values[register1], registers.values[register2])
+                print(f"Tested value in register {register1} with value in register {register2}")
             #AND
             case instruction if instruction[0:14] == "20000000000011":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                registers.values[register1] = registers.values[register1] & registers.values[register2]
+                registers.values[register1] = alu.bitwise_and(registers.values[register1], registers.values[register2])
                 print(f"AND Result: {registers.values[register1]} in register {register1}")
             #OR
             case instruction if instruction[0:14] == "20000000000012":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                registers.values[register1] = registers.values[register1] | registers.values[register2]
+                registers.values[register1] = alu.bitwise_or(registers.values[register1], registers.values[register2])
                 print(f"OR Result: {registers.values[register1]} in register {register1}")
             #XOR
             case instruction if instruction[0:14] == "20000000000013":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                registers.values[register1] = registers.values[register1] ^ registers.values[register2]
+                registers.values[register1] = alu.bitwise_xor(registers.values[register1], registers.values[register2])
                 print(f"XOR Result: {registers.values[register1]} in register {register1}")
             #NOT
             case instruction if instruction[0:14] == "20000000000014":
                 register = instruction[14]
-                registers.values[register] = ~registers.values[register]
+                registers.values[register] = alu.bitwise_not(registers.values[register])
                 print(f"NOT Result: {registers.values[register]} in register {register}")
             #NAND
             case instruction if instruction[0:14] == "20000000000015":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                registers.values[register1] = ~(registers.values[register1] & registers.values[register2])
+                registers.values[register1] = alu.bitwise_nand(registers.values[register1], registers.values[register2])
                 print(f"NAND Result: {registers.values[register1]} in register {register1}")
             #NOR
             case instruction if instruction[0:14] == "20000000000016":
                 register1 = instruction[14]
                 register2 = instruction[15]
-                registers.values[register1] = ~(registers.values[register1] | registers.values[register2])
+                registers.values[register1] = alu.bitwise_nor(registers.values[register1], registers.values[register2])
                 print(f"NOR Result: {registers.values[register1]} in register {register1}")
             #SHIFTLEFT
             case instruction if instruction[0:14] == "30000000000001":
                 register1 = instruction[14]
                 register2 = instruction[15]
                 #Left shift the value in register1 by the number of bits specified in register2
-                registers.values[register1] = registers.values[register1] << registers.values[register2]
+                registers.values[register1] = alu.shl(registers.values[register1], registers.values[register2])
                 print(f"Left Shift Result: {registers.values[register1]}")
-                print(bin(registers.values[register1]))
             #SHIFTRIGHT
             case instruction if instruction[0:14] == "30000000000002":
                 register1 = instruction[14]
                 register2 = instruction[15]
                 #Right shift the value in register1 by the number of bits specified in register2
-                registers.values[register1] = registers.values[register1] >> registers.values[register2]
+                registers.values[register1] = alu.shr(registers.values[register1], registers.values[register2])
                 print(f"Right Shift Result: {registers.values[register1]}")
-                print(bin(registers.values[register1]))
             #ROL ROTATION LEFT
             case instruction if instruction[0:14] == "30000000000003":
                 register1 = instruction[14]
                 register2 = instruction[15]
                 #Rotate left the value in register1 by the number of bits specified in register2
-                registers.values[register1] = (registers.values[register1] << registers.values[register2]) | (registers.values[register1] >> (32 - registers.values[register2]))
+                registers.values[register1] = alu.rol(registers.values[register1], registers.values[register2])
                 print(f"Rotate Left Result: {registers.values[register1]}")
             #ROR ROTATION RIGHT
             case instruction if instruction[0:14] == "30000000000004":
                 register1 = instruction[14]
                 register2 = instruction[15]
                 #Rotate right the value in register1 by the number of bits specified in register2
-                registers.values[register1] = (registers.values[register1] >> registers.values[register2]) | (registers.values[register1] << (32 - registers.values[register2]))
+                registers.values[register1] = alu.ror(registers.values[register1], registers.values[register2])
                 print(f"Rotate Right Result: {registers.values[register1]}")
             #JUMP
             case instruction if instruction[0:3] == "700":
                 address = instruction[3:]
+                
                 #TODO Implement jmp instruction, jump to address, memory addressing needs to be implemented first.
                 pass
             #JZ Jump if Zero flag is set
@@ -267,12 +264,5 @@ class Decoder:
 
     
 
-    def execute(self, instruction, ):
-        pass
 
         
-            
-
-    def registerInstruction(self, register, value):
-        registers.values[register] = value
-        return registers.values[register]

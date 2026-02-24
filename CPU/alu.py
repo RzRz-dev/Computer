@@ -108,5 +108,125 @@ class ALU:
         return self.subtract(a_str, "1")
     
 
+    def bitwise_and(self, a_str, b_str):
+        val_a = int(a_str, 16)
+        val_b = int(b_str, 16)
+        result = val_a & val_b
+        
+        # Logical ops usually clear CF and OF
+        self.Flags.CF = 0
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+
+    def bitwise_or(self, a_str, b_str):
+        val_a = int(a_str, 16)
+        val_b = int(b_str, 16)
+        result = val_a | val_b
+        
+        self.Flags.CF = 0
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+
+    def bitwise_xor(self, a_str, b_str):
+        val_a = int(a_str, 16)
+        val_b = int(b_str, 16)
+        result = val_a ^ val_b
+        
+        self.Flags.CF = 0
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+
+    def bitwise_not(self, a_str):
+        val_a = int(a_str, 16)
+        # Flip all bits and mask to exactly 52 bits
+        result = (~val_a) & self.MASK
+        
+        self.Flags.CF = 0
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+    
+    def bitwise_nand(self, a_str, b_str):
+        return self.bitwise_not(self.bitwise_and(a_str, b_str))
+    
+    def bitwise_nor(self, a_str, b_str):
+        return self.bitwise_not(self.bitwise_or(a_str, b_str))
+    
+    def shl(self, a_str, n_str):
+        val_a = int(a_str, 16)
+        n = int(n_str, 16)
+        
+        if n <= 0: return format(val_a, '013X')
+        if n > 52: n = 52 # Cap shift at word size
+        
+        # The Carry Flag is usually the LAST bit shifted out
+        # It is the bit at index (52 - n)
+        if n <= 52:
+            self.Flags.CF = (val_a >> (52 - n)) & 1
+        else:
+            self.Flags.CF = 0
+            
+        result = (val_a << n) & self.MASK
+        
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+
+    def shr(self, a_str, n_str):
+        val_a = int(a_str, 16)
+        n = int(n_str, 16)
+        
+        if n <= 0: return format(val_a, '013X')
+        
+        # The Carry Flag is the last bit shifted out from the right
+        # It is the bit at index (n - 1)
+        if n <= 52:
+            self.Flags.CF = (val_a >> (n - 1)) & 1
+        else:
+            self.Flags.CF = 0
+
+        result = (val_a >> n) & self.MASK
+        
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+    
+    def rol(self, a_str, n_str):
+        val_a = int(a_str, 16)
+        n = int(n_str, 16) % 52 # 52nd rotation returns to start
+        
+        if n == 0: return format(val_a, '013X')
+        
+        # Logic: Shift left by N, then OR with the bits that "fell off" the left
+        # and are now appearing on the right.
+        result = ((val_a << n) & self.MASK) | (val_a >> (52 - n))
+        
+        # CF is the last bit wrapped around
+        self.Flags.CF = (result & 1) 
+        
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+
+    def ror(self, a_str, n_str):
+        val_a = int(a_str, 16)
+        n = int(n_str, 16) % 52
+        
+        if n == 0: return format(val_a, '013X')
+        
+        # Logic: Shift right by N, then OR with the bits that "fell off" the right
+        # and are now appearing on the left.
+        result = (val_a >> n) | ((val_a << (52 - n)) & self.MASK)
+        
+        # CF is the last bit wrapped around
+        self.Flags.CF = (result >> 51) & 1
+        
+        self.Flags.OF = 0
+        self._update_common_flags(result)
+        return format(result, '013X')
+    
 
 alu = ALU()

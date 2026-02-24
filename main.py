@@ -1,27 +1,24 @@
 
-from CPU.decoder import Decoder
-#This import and the print registers.stack_pointer is just to test that the registers are working correctly. In a real CPU, the registers would be used to store data and instructions, and the stack pointer would be used to keep track of the top of the stack.
-from CPU.registers import registers
-from RAM.data_ram import data_ram
-from CPU.flags import flags
 
+from RAM.data_ram import data_ram
+from Utilities.loader import Loader
+from Utilities.execute import Execute
 
 def main():
-    
+    # Define the base in Hex
+    base_hex = int("0F", 16)  # This is 20 in decimal
 
-    decoder1 = Decoder()
+    # Loader handles the hex conversion internally now
+    loader = Loader(data_ram, base_hex)
+    loader.load_program("program.txt")
+    loader.load_program("program1.txt")
 
-    decoder1.decode("121000000000000F")
-    decoder1.decode("12200000000000F1")
-    decoder1.decode("2000000000000810") 
 
-    print(flags.CF, flags.ZF, flags.NF, flags.OF, flags.IF)
+    # Execute also takes the hex base
+    Execute(base_hex).execute_program()
 
-    print(registers.values)
-    print(registers.stack_pointer)
-    
-    
-    print(len("121FFFFFFFFFFFFF"))
+    # View the RAM (keys will be integers for easy math)
+    print("Final RAM state:", data_ram.storage)
 
 
 if __name__ == "__main__":
