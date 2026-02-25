@@ -7,30 +7,41 @@ from CPU.flags import flags
 
 class Execute:
     def __init__(self, current_instruction=0):
-        #Initialize the execute class
-        #To access the data_ram, decoder, and program counter, we will need to initialize them in the constructor of the execute class.
         self.data_ram = data_ram
         self.decoder = Decoder()
         self.program_counter = ProgramCounter(current_instruction)
         self.program_counter.set_next_instruction(current_instruction)
 
-    #This is a function that will execute the program
     def execute_program(self):
         fetcher = Fetch()
+        # Track whether we are in manual step-through or automatic mode
+        auto_mode = False
         
         print("========= Starting Program Execution =========")
+        print("Tip: Press 'Enter' to step, or type 'auto' for continuous execution.")
+        
         while True:
-            print("Address: ",self.program_counter.get_next_instruction())
-            if self.program_counter.get_next_instruction() not in data_ram.storage:
+            current_addr = self.program_counter.get_next_instruction()
+            print("Address: ", current_addr)
+            
+            if current_addr not in data_ram.storage:
                 print("End of program reached.")
                 break
             
-            instruction = fetcher.fetch_instruction(self.program_counter.get_next_instruction())
-            Decoder().decode(instruction)
+            # Fetch and Decode
+            instruction = fetcher.fetch_instruction(current_addr)
+            self.decoder.decode(instruction)
             
+            # Update PC
             self.program_counter.set_next_instruction()
-            input()
+            
+            # Handle user input / Pause logic
+            if not auto_mode:
+                user_input = input("Press Enter to step (or type 'auto'): ").strip().lower()
+                if user_input == "auto":
+                    auto_mode = True
+
             print(registers.values)
             print(str(flags))
-        print("========= Program Execution Finished =========")
             
+        print("========= Program Execution Finished =========")

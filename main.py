@@ -12,7 +12,7 @@ def main():
     #Loader, makes the space in ram for the load of data
     loader = Loader(data_ram, base_hex)
     # This loads the program into the ram
-    loader.load_program("program.txt")
+    loader.load_program("program1.txt")
 
     # Execute sequentially all the instructions stored in RAM.
     Execute(base_hex).execute_program()
