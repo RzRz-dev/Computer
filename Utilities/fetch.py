@@ -8,7 +8,7 @@ class Fetch:
 
     def fetch_instruction(self, address):
         instruction = data_ram.read(address)
-        instruction_hex = hex(int(instruction, 2))[2:].upper()
+        instruction_hex = hex(int(instruction, 16))[2:].upper()
         return instruction_hex
 
     

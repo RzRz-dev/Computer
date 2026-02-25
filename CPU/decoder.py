@@ -2,6 +2,8 @@ from CPU.alu import alu
 from CPU.registers import registers
 from RAM.data_ram import data_ram
 from RAM.stack import stack_ram
+from CPU.pc import pc
+from CPU.flags import Flags
 
 class Decoder:
 
@@ -191,67 +193,81 @@ class Decoder:
                 print(f"Rotate Right Result: {registers.values[register1]}")
             #JUMP
             case instruction if instruction[0:3] == "700":
-                address = instruction[3:]
-                
-                #TODO Implement jmp instruction, jump to address, memory addressing needs to be implemented first.
-                pass
+                address = alu.decrement(instruction[3:])
+                pc.set_next_instruction(address)
+
             #JZ Jump if Zero flag is set
             case instruction if instruction[0:3] == "701":
                 address = instruction[3:]
-                #TODO Implement jz instruction, jump if zero flag is set, memory addressing needs to be implemented first-
-                pass
+                if Flags.ZF == 1:
+                    pc.set_next_instruction(address)
+
             #JNZ Jump if Zero flag is not set
             case instruction if instruction[0:3] == "702":
                 address = instruction[3:]
-                #TODO Implement jnz instruction, jump if zero flag is not set
-                pass
-            #JP Jump if Positive flag is set
+                if Flags.ZF == 0:
+                    pc.set_next_instruction(address)
+
+            #JP Jump if Negative flag is not set
             case instruction if instruction[0:3] == "703":
                 address = instruction[3:]
-                #TODO Implement jp instruction, jump if positive flag is set
-                pass
+                if Flags.NF == 0:
+                    pc.set_next_instruction(address)
+
             #JN Jump if Negative flag is set
             case instruction if instruction[0:3] == "704":
                 address = instruction[3:]
-                #TODO Implement jn instruction, jump if negative flag is set
-                pass
+                if Flags.NF == 1:
+                    pc.set_next_instruction(address)
+
             #JC Jump if Carry flag is set
             case instruction if instruction[0:3] == "705":
                 address = instruction[3:]
-                #TODO Implement jc instruction, jump if carry flag is set
-                pass
+                if Flags.CF == 1:
+                    pc.set_next_instruction(address)
+
             #JNC Jump if Carry flag is not set
             case instruction if instruction[0:3] == "706":
-                #TODO Implement jnc instruction, jump if carry flag is not set
-                pass
+                address = instruction[3:]
+                if Flags.CF == 0:
+                    pc.set_next_instruction(address)
+
             #JO Jump if Overflow flag is set
             case instruction if instruction[0:3] == "707":
-                #TODO Implement jo instruction, jump if overflow flag is set
-                pass
+                address = instruction[3:]
+                if Flags.OF == 1:
+                    pc.set_next_instruction(address)
+
             #JNO Jump if Overflow flag is not set
             case instruction if instruction[0:3] == "708":
-                #TODO Implement jno instruction, jump if overflow flag is not set
-                pass
+                address = instruction[3:]
+                if Flags.OF == 0:
+                    pc.set_next_instruction(address)
+
+            #For the moment subroutines will not be implemented, since it needs an special register that remembers where is the last instruction to come back later
             #CALL a subroutine at address
             case instruction if instruction[0:3] == "709":
+                
                 #TODO Implement call instruction, call subroutine at address
                 pass
+
             #RET Return from subroutine
             case instruction if instruction[0:16] == "70A0000000000000":
                 #TODO Implement ret instruction, return from subroutine
                 pass
             
             case instruction if instruction[0:16] == "0000000000000000":
-                #TODO Stop the program
                 pass
 
             #Interrupt instructions, these functions will not be implemented in the foreseeable future, since they are related to interrupts and I do not plan on implementing interrupts in this CPU simulation, but they are declared here for completeness and future implementation.
             #CLI Clear Interrupt Flag
             case instruction if instruction[0:16] == "0000000000000001":
-                pass
+                Flags.IF = 0
+
             #STI Set Interrupt Flag
             case instruction if instruction[0:16] == "0000000000000002":
-                pass
+                Flags.IF = 1
+
             #IN Port Input
             case instruction if instruction[0:13] == "9000000000000":
                 pass
