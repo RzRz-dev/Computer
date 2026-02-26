@@ -34,7 +34,7 @@ class Decoder:
             case instruction if instruction[0:2] == "11":
                 register = instruction[2]
                 address = instruction[3:]
-                registers.values[register] = address
+                registers.values[register] = data_ram.read(address)
 
                 print("Load memory address "+str(address)+" in register "+str(register))
             #LOADV
