@@ -30,12 +30,14 @@ class Execute:
                 print("End of program reached.")
                 break
             
+            # Update PC
+            self.program_counter.set_next_instruction()
+            
             # Fetch and Decode
             instruction = fetcher.fetch_instruction(current_addr)
             self.decoder.decode(instruction)
             
-            # Update PC
-            self.program_counter.set_next_instruction()
+            
             
             # Handle user input / Pause logic
             if not auto_mode:

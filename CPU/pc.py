@@ -15,9 +15,9 @@ class ProgramCounter:
         if current_address is not None:
             # Handle if the input is a hex string or an int
             if isinstance(current_address, str):
-                self.address = int(current_address, 16)-1
+                self.address = int(current_address, 16)
             else:
-                self.address = int(current_address)-1
+                self.address = int(current_address)
         else:
             self.advance()
             
