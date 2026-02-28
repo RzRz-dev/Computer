@@ -193,8 +193,9 @@ class Decoder:
                 print(f"Rotate Right Result: {registers.values[register1]}")
             #JUMP
             case instruction if instruction[0:3] == "700":
-                address = alu.decrement(instruction[3:])
+                address = instruction[3:]
                 pc.set_next_instruction(address)
+                
 
             #JZ Jump if Zero flag is set
             case instruction if instruction[0:3] == "701":
@@ -213,13 +214,13 @@ class Decoder:
                 address = instruction[3:]
                 if Flags.NF == 0:
                     pc.set_next_instruction(address)
-
+                    print(f"Jump to: {address}")
             #JN Jump if Negative flag is set
             case instruction if instruction[0:3] == "704":
                 address = instruction[3:]
                 if Flags.NF == 1:
                     pc.set_next_instruction(address)
-
+                    print(f"Jump to: {address}")
             #JC Jump if Carry flag is set
             case instruction if instruction[0:3] == "705":
                 address = instruction[3:]

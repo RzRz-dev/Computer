@@ -11,13 +11,13 @@ class ProgramCounter:
         # Format to hex string only when outputting
         return format(self.address, '016x').upper()
 
-    def set_next_instruction(self, current_address=None):
-        if current_address is not None:
+    def set_next_instruction(self, next_address=None):
+        if next_address is not None:
             # Handle if the input is a hex string or an int
-            if isinstance(current_address, str):
-                self.address = int(current_address, 16)
+            if isinstance(next_address, str):
+                self.address = int(next_address, 16)
             else:
-                self.address = int(current_address)
+                self.address = int(next_address)
         else:
             self.advance()
             
