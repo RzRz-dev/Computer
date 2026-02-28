@@ -20,6 +20,8 @@ class Execute:
         print("========= Starting Program Execution =========")
         print("Tip: Press 'Enter' to step, or type 'auto' for continuous execution.")
         
+        self.program_counter.advance()
+
         while True:
             current_addr = self.program_counter.get_next_instruction()
             print("Address: ", current_addr)
