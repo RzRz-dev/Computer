@@ -28,5 +28,6 @@ class RegisterBank:
             # If it doesn't exist yet, create it
             cls._instance = super(RegisterBank, cls).__new__(cls)
         return cls._instance
+    
 
 registers = RegisterBank()

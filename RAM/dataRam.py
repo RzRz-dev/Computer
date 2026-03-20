@@ -19,4 +19,4 @@ class DataRAM:
     def __str__(self):
         return f"DataRAM Storage: {self.storage}"
 
-data_ram = DataRAM()
+ram = DataRAM()

@@ -1,4 +1,4 @@
-from RAM.data_ram import data_ram
+from RAM.dataRam import data_ram
 
 
 class Fetch:

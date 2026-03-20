@@ -1,4 +1,4 @@
-from RAM.data_ram import data_ram
+from RAM.dataRam import data_ram
 
 class Loader:
     _instance = None
@@ -20,30 +20,7 @@ class Loader:
     
     def load_program(self, file_path):
         with open(file_path, "r") as file:
-            current_addr_int = self.offset
-            
-            for line in file:
-                line = line.strip()
-                if not line: continue
-
-                # Value logic
-                if '(' in line:
-                    prefix, target = line.split('(')
-                    target_line = int(target.replace(')', ''))
-                    abs_target = target_line + self.offset
-                    full_bin = (prefix + format(abs_target, '052b')).ljust(64, '0')[:64]
-                    hex_val = format(int(full_bin, 2), '016X')
-                else:
-                    hex_val = format(int(line.ljust(64, '0')[:64], 2), '016X')
-
-                # --- THE KEYS (ADDRESSES) ---
-                # Force the key to be exactly 16 characters long, padded with 0
-                hex_key = format(current_addr_int, '016X')
-                
-                self.data_ram.write(hex_key, hex_val)
-                current_addr_int += 1
-            
-            self.offset = current_addr_int
+            pass
 
 
 loader = Loader(data_ram)

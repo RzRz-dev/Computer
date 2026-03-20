@@ -1,5 +1,5 @@
 from CPU.decoder import Decoder
-from RAM.data_ram import data_ram
+from RAM.dataRam import data_ram
 from CPU.pc import ProgramCounter
 from Utilities.fetch import Fetch
 from CPU.registers import registers
