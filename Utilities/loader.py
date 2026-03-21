@@ -1,4 +1,4 @@
-from RAM.dataRam import data_ram
+from RAM.dataRam import ram
 
 class Loader:
     _instance = None
@@ -20,7 +20,19 @@ class Loader:
     
     def load_program(self, file_path):
         with open(file_path, "r") as file:
-            pass
+            for line in file:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Convert binary string to hex, preserving full length
+                num_hex_chars = len(line) // 4
+                value = format(int(line, 2), f'0{num_hex_chars}X')
+                
+                # Store at current offset
+                address = format(self.offset, '016X')
+                self.data_ram.write(address, value)
+                self.offset += 1
 
 
-loader = Loader(data_ram)
+loader = Loader(ram)

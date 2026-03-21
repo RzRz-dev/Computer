@@ -1,4 +1,7 @@
-from CPU.load import Load
+from CPU.memoryManagementModule import Load
+from CPU.aluController import ALUController
+from CPU.jumpHandler import Jump
+from CPU.flags import flags
 
 class Decoder:
 
@@ -20,15 +23,13 @@ class Decoder:
     def decode(instruction):
         
         opcode = instruction[0:2]
-        print ("Opcode: ",opcode)
 
         print(f"Decoding instruction: {instruction}")
-
         #Instruction set 1: LOAD, LOADV, STORE, LEA
         #Instruction form: Opcode[2 Hex] Register[1 Hex] Address[16 Hex]
         if opcode == "11" or opcode == "12" or opcode == "13" or opcode == "16":
             register = instruction[2]
-            value = instruction[3:(3+14)]
+            value = instruction[3:(3+16)]
             Load.loader(opcode, register, value)
 
         #Instruction set 2: Stack Operations
@@ -37,21 +38,20 @@ class Decoder:
             midcode = instruction[14]
             register = instruction[15]
 
-
         #Instruction set 3: ALU Operations
         #Instruction form: Opcode[12 Hex] Midcode[2 Hex] RegisterA[1 Hex] RegisterB[1 Hex]
         if opcode == "20" or opcode =="30":
             midcode = instruction[12:14]
             registerA = instruction[14]
             registerB = instruction[15]
+            ALUController.readALUInstruction(opcode,midcode,registerA,registerB)
 
-        
         #Instruction set 4: Jump Instructions
         #Instruction form: Opcode[2 Hex] Micdoce[1 Hex] Address[16 Hex]
         if opcode == "70":
             midcode = instruction[2]
-            address = instruction [3:(2+14)]
-
+            address = instruction [3:(3+16)]
+            Jump.readJumpInstruction(midcode, address)
 
         #Instruction set 5: I/O Devices
         #Instruction form:  Opcode[13 Hex] Register[1 Hex] Port[2 Hex]
@@ -63,6 +63,10 @@ class Decoder:
         #Instruction form: Opcode[15 Hex] Midcode[1 Hex]
         if opcode == "00":
             midcode = instruction[15]
+            if midcode == "1":
+                flags.IF == 0
+            if midcode == "2":
+                flags.IF == 0
             
 
     

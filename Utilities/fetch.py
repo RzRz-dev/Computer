@@ -1,13 +1,13 @@
-from RAM.dataRam import data_ram
+from RAM.dataRam import ram
 
 
 class Fetch:
     def __init__(self, ):
-        self.data_ram = data_ram
+        self.data_ram = ram
         
 
     def fetch_instruction(self, address):
-        instruction = data_ram.read(address)
+        instruction = ram.read(address)
         instruction_hex = hex(int(instruction, 16))[2:].upper()
         return instruction_hex
 
