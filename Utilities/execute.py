@@ -5,6 +5,8 @@ from Utilities.fetch import Fetch
 from CPU.registers import registers
 from CPU.flags import flags
 
+STACK_BASE = 0xFFFF
+
 class Execute:
     def __init__(self, current_instruction=0):
         self.ram = ram
@@ -12,6 +14,12 @@ class Execute:
         self.fetcher = Fetch()
         self.program_counter = ProgramCounter(current_instruction)
         self.program_counter.set_next_instruction(current_instruction)
+        self._init_stack()
+
+    def _init_stack(self):
+        registers.stack_pointer = STACK_BASE
+        ram.write(format(STACK_BASE, '016X'), 'DEADBEEFDEADBEEF')
+        print(f"Stack initialized at 0x{STACK_BASE:04X}")
 
     def execute_program(self):
         auto_mode = False
@@ -39,4 +47,24 @@ class Execute:
                 if user_input == "auto":
                     auto_mode = True
 
+        self._print_final_state()
         print("========= Program Execution Finished =========")
+
+    def _print_final_state(self):
+        print("\n========= Final State =========")
+
+        print("\n--- Registers ---")
+        for reg, val in registers.values.items():
+            print(f"  R{reg} = {val}  (dec: {int(val, 16)})")
+
+        print(f"\n  SP = {format(registers.stack_pointer, '016X')}")
+        print(f"  PC = {self.program_counter.get_next_instruction()}")
+        print(f"\n--- Flags ---")
+        print(f"  {flags}")
+
+        print("\n--- RAM ---")
+        for addr in sorted(ram.storage.keys()):
+            # Skip stack sentinel to avoid noise
+            if int(addr, 16) == STACK_BASE:
+                continue
+            print(f"  [{addr}] = {ram.storage[addr]}")
