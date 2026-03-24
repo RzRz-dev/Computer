@@ -87,4 +87,21 @@ class FPU:
         # Like ALU CMP — just sets flags, no result stored
         self.subtract(a_str, b_str)
 
+    def i2f(self, a_str):
+        """Interprets the bits as an integer and converts to IEEE 754 float"""
+        int_val = int(a_str, 16)
+        result = float(int_val)
+        self._update_flags(result)
+        return self._pack(result)
+
+    def f2i(self, a_str):
+        """Interprets the bits as IEEE 754 float and converts to integer"""
+        float_val = self._unpack(a_str)
+        if float_val > self.MASK or float_val < 0:
+            self.Flags.IF = 1
+            return "0000000000000000"
+        result = int(float_val)
+        self._update_flags(float(result))
+        return format(result, '016X')
+
 fpu = FPU()

@@ -51,4 +51,6 @@ class ALUController:
                 case "06": registers.values[registerA] = registers.values[registerB]
                 case "07": registers.values[registerA] = fpu.increment(registers.values[registerA])
                 case "08": registers.values[registerA] = fpu.decrement(registers.values[registerA])
+                case "09":  registers.values[registerA] = fpu.i2f(register1)   # I2F
+                case "0A":  registers.values[registerA] = fpu.f2i(register1)   # F2I
                 case "0E": fpu.cmp(register1, register2)
