@@ -55,6 +55,10 @@ def t_ETIQUETA(t):
 # Ignorar espacios
 t_ignore = ' \t'
 
+def t_COMMENT(t):
+    r';[^\n]*'
+    pass
+
 def t_newline(t):
     r'\n+'
     pass
