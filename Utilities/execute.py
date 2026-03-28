@@ -14,6 +14,7 @@ class Execute:
         self.fetcher = Fetch()
         self.program_counter = ProgramCounter(current_instruction)
         self.program_counter.set_next_instruction(current_instruction)
+        self.auto_mode = False
         self._init_stack()
 
     def _init_stack(self):
@@ -22,7 +23,6 @@ class Execute:
         print(f"Stack initialized at 0x{STACK_BASE:04X}")
 
     def execute_program(self):
-        auto_mode = False
         print("========= Starting Program Execution =========")
         print("Tip: Press 'Enter' to step, or type 'auto' for continuous execution.")
 
@@ -42,11 +42,9 @@ class Execute:
             print(f"Registers: {registers.values}")
             print(f"Flags: {flags}")
 
-            if not auto_mode:
-                user_input = input("Press Enter to step (or type 'auto'): ").strip().lower()
-                if user_input == "auto":
-                    auto_mode = True
-
+            if not self.auto_mode:
+                user_input = input("Press Enter to step: ").strip().lower()
+    
         self._print_final_state()
         print("========= Program Execution Finished =========")
 
@@ -68,3 +66,10 @@ class Execute:
             if int(addr, 16) == STACK_BASE:
                 continue
             print(f"  [{addr}] = {ram.storage[addr]}")
+
+    def set_current_isntruction(self, current_instruction):
+        self.program_counter = ProgramCounter(current_instruction)
+        self.program_counter.set_next_instruction(current_instruction)
+
+    def set_auto_mode_value(self, value):
+        self.auto_mode = value
