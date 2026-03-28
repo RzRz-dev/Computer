@@ -7,16 +7,18 @@ class Loader:
         self.offset = int(base_hex, 16) if isinstance(base_hex, str) else base_hex
 
     def load_program(self, file_path):
+        base = self.offset  # capture base at load time, never changes
+
         with open(file_path, "r") as file:
             for line in file:
                 line = line.strip()
                 if not line or line.startswith(';'):
                     continue
 
-                # Expand (n) placeholders → 64-bit binary
+                # Expand (n) → base + n, always relative to load address
                 def expand(match):
                     n = int(match.group(1))
-                    return format(n & ((1 << 64) - 1), '064b')
+                    return format((base + n) & ((1 << 64) - 1), '064b')
 
                 line = re.sub(r'\((\d+)\)', expand, line)
 
@@ -24,7 +26,8 @@ class Loader:
                     continue
 
                 num_hex_chars = len(line) // 4
-                value = format(int(line, 2), f'0{num_hex_chars}X')
+                mask = (1 << len(line)) - 1
+                value = format(int(line, 2) & mask, f'0{num_hex_chars}X')
 
                 address = format(self.offset, '016X')
                 self.data_ram.write(address, value)
