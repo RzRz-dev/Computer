@@ -13,7 +13,7 @@ class ProgramCounter:
         return format(self.address, '016x').upper()
 
     def set_next_instruction(self, next_address=None):
-        if next_address is not None:
+        if next_address:
             if isinstance(next_address, str):
                 self.address = int(next_address, 16)
             else:
