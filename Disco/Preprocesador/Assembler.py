@@ -22,7 +22,7 @@ t_COMMA = r','
 # INSTRUCCIONES
 # ========================
 def t_INSTR(t):
-    r'LOADV|LOAD|STORE|PUSH|POP|LEA|ADDF|ADD|SUBF|SUB|MULF|MUL|DIVF|DIV|MODF|MOD|CPY|INC|DEC|CMPF|CMP|I2F|F2I|TEST|AND|OR|XOR|NOT|NAND|NOR|SHL|SHR|ROL|ROR|JMP|JZ|JNZ|JP|JN|JC|JNC|JO|JNO|CALL|RET|CLI|STI|NOP|IN|OUT'
+    r'LOADV|LOAD|STORE|PUSH|POP|MOV|LEA|ADDF|ADD|SUBF|SUB|MULF|MUL|DIVF|DIV|MODF|MOD|CPY|INC|DEC|CMPF|CMP|I2F|F2I|TEST|AND|OR|XOR|NOT|NAND|NOR|SHL|SHR|ROL|ROR|JMP|JZ|JNZ|JP|JN|JC|JNC|JO|JNO|CALL|RET|CLI|STI|NOP|IN|OUT'
     return t
 
 # ========================
@@ -78,6 +78,7 @@ opcodes = {
     'STORE' :0x13,
     'PUSH'  :0x100000000000001,
     'POP'   :0x100000000000002,
+    'MOV'   :0x14,
     'LEA'   :0x16,
     'ADD'   :0x20000000000001,
     'ADDF'  :0x21000000000001,
@@ -205,8 +206,6 @@ def parse_line(line):
         if(tokens_list[3].type == 'ETIQUETA'):
             etiqueta = '('+ str(etiquetas[tokens_list[3].value]) +')'
             outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + '' + etiqueta)
-        
-        
 
     return outputs  # Devolver la lista de outputs
 

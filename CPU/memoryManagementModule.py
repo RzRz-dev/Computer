@@ -20,6 +20,12 @@ class Load:
                 ram.write(value, registers.values[register])
                 print("Store value of register ",register," in memory address ",value)
 
+            #MOV
+            case "14":
+                address = registers.values[value]
+                registers.values[register] = ram.read(address)
+                print("Load value from register", value ," [Address:", address ,"] in register ", register)
+
             #LEA
             case "16":
                 registers.values[register] = ram.read(value)
