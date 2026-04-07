@@ -1,8 +1,60 @@
 import os
-import re
+import ply.lex as lex
 import sys
 
-INCLUDE_RE = re.compile(r'^\s*INCLUDE\s+["\']?([^"\']+)["\']?\s*(?:;.*)?$', re.IGNORECASE)
+# ========================
+# TOKENS
+# ========================
+tokens = (
+    'INCLUDE',
+    'STRING',
+    'NUMBER',
+    'COLON',
+    'COMMA',
+    'OTHER',
+
+)
+
+# ========================
+# STRINGS
+# ========================
+def t_INCLUDE(t):
+    r'INCLUDE'
+    return t
+
+def t_STRING(t):
+    r'"[^"]*"|\'[^\']*\''
+    t.value = t.value[1:-1]  # Remove ""
+    return t
+
+def t_NUMBER(t):
+    r'[-+]?\d+'
+    t.value = int(t.value)
+    return t
+
+def t_COMMENT(t):
+    r';[^\n]*'
+    pass
+
+def t_COLON(t):
+    r':'
+    return t
+
+def t_COMMA(t):
+    r','
+    return t
+
+t_ignore = ' \t'
+
+def t_OTHER(t):
+    r'[A-Za-z_][A-Za-z0-9_]*'
+    return t
+
+def t_error(t):
+    print(f"Caracter ilegal: {t.value[0]}")
+    t.lexer.skip(1)
+
+lexer = lex.lex()
 
 
 def resolve_include_path(include_name, current_dir, lib_dir):
@@ -45,9 +97,11 @@ def preprocess_file(input_path, lib_dir=None, included_files=None):
     with open(input_path, 'r', encoding='utf-8') as infile:
         for raw_line in infile:
             line = raw_line.rstrip('\n')
-            match = INCLUDE_RE.match(line)
-            if match:
-                include_name = match.group(1).strip()
+            lexer.input(line)
+            tokens_list = list(lexer)
+            lexer.input(line)
+            if tokens_list and tokens_list[0].type == 'INCLUDE' and len(tokens_list) > 1 and tokens_list[1].type == 'STRING':
+                include_name = tokens_list[1].value
                 include_path = resolve_include_path(include_name, current_dir, lib_dir)
                 included_lines = preprocess_file(include_path, lib_dir=lib_dir, included_files=included_files)
                 output_lines.extend(included_lines)
