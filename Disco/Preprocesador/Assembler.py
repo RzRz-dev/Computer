@@ -1,6 +1,7 @@
 import ply.lex as lex
 import sys
 import os
+import struct
 
 linea = 0
 etiquetas = {}
@@ -42,8 +43,12 @@ def t_REGISTER(t):
 # NUMEROS (inmediatos)
 # ========================
 def t_NUMBER(t):
-    r'[-+]?\d+'
-    t.value = int(t.value)
+    r'[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?'
+    raw = t.value
+    if ('.' in raw) or ('e' in raw) or ('E' in raw):
+        t.value = float(raw)
+    else:
+        t.value = int(raw)
     return t
 
 def t_ETIQUETA(t):
@@ -130,6 +135,17 @@ def to_unsigned_64(value):
     return value & ((1 << 64) - 1)
 
 
+def float_to_u64(value: float) -> int:
+    packed = struct.pack('>d', float(value))
+    return int.from_bytes(packed, byteorder='big', signed=False)
+
+
+def encode_64(value) -> str:
+    if isinstance(value, float):
+        return format(float_to_u64(value), '064b')
+    return format(to_unsigned_64(int(value)), '064b')
+
+
 # ========================
 # PARSER SIMPLE
 # ========================
@@ -177,7 +193,7 @@ def parse_line(line):
             
         if(tokens_list[0].type == 'NUMBER'):
             num = tokens_list[0].value
-            outputs.append(format(to_unsigned_64(num), '064b'))
+            outputs.append(encode_64(num))
         
     if len(tokens_list) == 2:
         instr = tokens_list[0].value
@@ -199,7 +215,7 @@ def parse_line(line):
         
         if(tokens_list[3].type == 'NUMBER'):
             num = tokens_list[3].value
-            outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + format(to_unsigned_64(num), '064b'))
+            outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + encode_64(num))
         
         
         if(tokens_list[3].type == 'ETIQUETA'):
