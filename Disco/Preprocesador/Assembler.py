@@ -1,6 +1,7 @@
 import ply.lex as lex
 import sys
 import os
+import Preprocessor
 
 linea = 0
 etiquetas = {}
@@ -221,18 +222,18 @@ if __name__ == "__main__":
     output_file = os.path.join(os.path.dirname(input_file), 'program1.bin')
     
     try:
-        with open(input_file, 'r') as infile:
-            
-            for l in infile:
-                l = l.strip()
-                if l:  # Si la línea no está vacía
-                    parse_etiq(l)
-                    linea +=1
-                    
-        with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
+        preprocessed_lines = Preprocessor.preprocess_file(input_file)
+
+        for l in preprocessed_lines:
+            line = l.strip()
+            if line:  # Si la línea no está vacía
+                parse_etiq(line)
+                linea += 1
+
+        with open(output_file, 'w') as outfile:
             linea = 0
-            for line in infile:
-                line = line.strip()  # Remover espacios en blanco
+            for line_text in preprocessed_lines:
+                line = line_text.strip()  # Remover espacios en blanco
                 if line:  # Si la línea no está vacía
                     outputs = parse_line(line)
                     for output in outputs:
