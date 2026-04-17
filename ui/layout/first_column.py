@@ -6,11 +6,13 @@ from ..components.button_panel import ButtonPanel
 from ..styles.styles import AppStyles
 from Disco.Compilador.Assembler import assemble_program
 from Disco.Compilador.Preprocessor import preprocess_program
+from Disco.Compilador.lexical_analyzer import LexicalAnalyzer
 
 class FirstColumn():
     def __init__(self, page: ft.Page, relocatable_code_block):
         self.page = page
         self.relocatable_code_block = relocatable_code_block
+        self.lexical_analyzer = LexicalAnalyzer()
         self._create_components()
         self._build_column()
 
@@ -49,6 +51,15 @@ class FirstColumn():
         }
 
         self.high_level_panel_btns = ButtonPanel(high_level_btns)
+
+        lex_btns = {
+            "Analisis lexico": {
+                "icon": ft.Icons.SEARCH,
+                "func": self._lexical_analysis
+            }
+        }
+
+        self.high_level_lex_btn = ButtonPanel(lex_btns)
         self.assembly_code_panel_btns = ButtonPanel(assembly_btns)
         self.selected_file = ft.Text(style=AppStyles.file_text())
 
@@ -61,6 +72,7 @@ class FirstColumn():
                     self.high_level_code.code_block_comp,
                     self.selected_file,
                     self.high_level_panel_btns.button_panel_comp,
+                    self.high_level_lex_btn.button_panel_comp,
                     self.assembly_code.code_block_comp,
                     self.assembly_code_panel_btns.button_panel_comp
                 ]
@@ -140,6 +152,52 @@ class FirstColumn():
             return
 
         self.relocatable_code_block.code_editor.value = relocatable_code
+        self.page.update()
+
+    def _lexical_analysis(self, _=None):
+        high_level_program = self.high_level_code.code_editor.value or ""
+
+        if not high_level_program.strip():
+            self.assembly_code.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text("No hay codigo de alto nivel para analizar"),
+                bgcolor=ft.Colors.RED_400,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        tokens, errors = self.lexical_analyzer.tokenize(high_level_program)
+
+        output_lines = [
+            "=== ANALISIS LEXICO ===",
+            "",
+            f"Tokens: {len(tokens)}",
+            f"Errores: {len(errors)}",
+            "",
+            f"{'LINE':<8} {'TYPE':<20} VALUE",
+            "-" * 60,
+        ]
+
+        for token in tokens:
+            output_lines.append(
+                f"{token['line']:<8} {token['type']:<20} {token['value']}"
+            )
+
+        if errors:
+            output_lines.append("")
+            output_lines.append("=== ERRORES LEXICOS ===")
+            for error in errors:
+                output_lines.append(
+                    f"Linea {error['line']}: {error['message']}"
+                )
+
+        self.assembly_code.code_editor.value = "\n".join(output_lines)
+        self.page.snack_bar = ft.SnackBar(
+            content=ft.Text("Analisis lexico completado"),
+            bgcolor=ft.Colors.GREEN_400,
+        )
+        self.page.snack_bar.open = True
         self.page.update()
 
     def _clear_assembly(self, _=None):

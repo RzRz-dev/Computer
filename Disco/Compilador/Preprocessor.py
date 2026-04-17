@@ -1,74 +1,9 @@
 import os
-import ply.lex as lex
+import re
 import sys
 
-# ========================
-# TOKENS
-# ========================
-tokens = (
-    'INCLUDE',
-    'DEFINE',
-    'STRING',
-    'NUMBER',
-    'COLON',
-    'COMMA',
-    'ASSIGN',
-    'OTHER',
-
-)
-
-# ========================
-# STRINGS
-# ========================
-def t_INCLUDE(t):
-    r'INCLUDE'
-    return t
-
-def t_DEFINE(t):
-    r'DEFINE'
-    return t
-
-def t_STRING(t):
-    r'"[^"]*"|\'[^\']*\''
-    t.value = t.value[1:-1]  # Remove ""
-    return t
-
-def t_NUMBER(t):
-    r'[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?'
-    raw = t.value
-    if ('.' in raw) or ('e' in raw) or ('E' in raw):
-        t.value = float(raw)
-    else:
-        t.value = int(raw)
-    return t
-
-def t_COMMENT(t):
-    r';[^\n]*'
-    pass
-
-def t_COLON(t):
-    r':'
-    return t
-
-def t_COMMA(t):
-    r','
-    return t
-
-t_ignore = ' \t'
-
-t_ASSIGN = r'='
-
-def t_OTHER(t):
-    r'[A-Za-z_][A-Za-z0-9_]*'
-    return t
-
-def t_error(t):
-    print(f"Caracter ilegal: {t.value[0]}")
-    t.lexer.skip(1)
-
-lexer = lex.lex()
-
-macros = {}
+INCLUDE_RE = re.compile(r'^\s*INCLUDE\s+("[^"]+"|\'[^\']+\')\s*$', re.IGNORECASE)
+DEFINE_RE = re.compile(r'^\s*DEFINE\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+?)\s*$')
 
 
 def _default_lib_dir():
@@ -94,20 +29,15 @@ def resolve_include_path(include_name, current_dir, lib_dir):
     )
 
 
-def _tokenize_line(line):
-    lexer.input(line)
-    return list(lexer)
-
-
 def _preprocess_lines(lines, current_dir, lib_dir, included_files, macros_table):
     output_lines = []
 
     for raw_line in lines:
         line = raw_line.rstrip('\n')
-        tokens_list = _tokenize_line(line)
 
-        if tokens_list and tokens_list[0].type == 'INCLUDE' and len(tokens_list) > 1 and tokens_list[1].type == 'STRING':
-            include_name = tokens_list[1].value
+        include_match = INCLUDE_RE.match(line)
+        if include_match:
+            include_name = include_match.group(1)[1:-1]
             include_path = resolve_include_path(include_name, current_dir, lib_dir)
             included_lines = preprocess_file(
                 include_path,
@@ -116,34 +46,22 @@ def _preprocess_lines(lines, current_dir, lib_dir, included_files, macros_table)
                 macros=macros_table,
             )
             output_lines.extend(included_lines)
+            continue
 
-        elif tokens_list and tokens_list[0].type == 'DEFINE' and len(tokens_list) > 2:
-            define_name = tokens_list[1].value
-            define_value = tokens_list[2].value
+        define_match = DEFINE_RE.match(line)
+        if define_match:
+            define_name = define_match.group(1)
+            define_value = define_match.group(2)
             macros_table[define_name] = define_value
+            continue
 
-        elif tokens_list and tokens_list[0].type == 'OTHER' and len(tokens_list) > 3:
-            temp_instruction = tokens_list[0].value
-            temp_value1 = tokens_list[1].value
-            temp_other = tokens_list[2].value
-            temp_value2 = tokens_list[3].value
+        processed_line = line
+        if macros_table:
+            # Reemplaza macros completas sin alterar puntuacion ni espaciado original.
+            for name, value in macros_table.items():
+                processed_line = re.sub(rf'\b{re.escape(name)}\b', str(value), processed_line)
 
-            if tokens_list[1].type == 'OTHER' and temp_value1 in macros_table:
-                temp_value1 = macros_table[temp_value1]
-
-            if tokens_list[3].type == 'OTHER' and temp_value2 in macros_table:
-                temp_value2 = macros_table[temp_value2]
-
-            output_lines.append(f'{temp_instruction} {temp_value1} {temp_other} {temp_value2}')
-
-        elif tokens_list and tokens_list[0].type == 'OTHER' and len(tokens_list) > 2:
-            var_value = tokens_list[2].value
-            if tokens_list[2].type == 'OTHER' and var_value in macros_table:
-                var_value = macros_table[tokens_list[2].value]
-            output_lines.append(f'{tokens_list[0].value} {tokens_list[1].value} {var_value}')
-
-        else:
-            output_lines.append(line)
+        output_lines.append(processed_line)
 
     return output_lines
 
