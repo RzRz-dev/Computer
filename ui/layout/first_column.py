@@ -1,8 +1,11 @@
+import os
+
 import flet as ft
 from ..components.code_block import CodeBlock
 from ..components.button_panel import ButtonPanel
 from ..styles.styles import AppStyles
 from Disco.Compilador.Assembler import assemble_program
+from Disco.Compilador.Preprocessor import preprocess_program
 
 class FirstColumn():
     def __init__(self, page: ft.Page, relocatable_code_block):
@@ -19,6 +22,10 @@ class FirstColumn():
             "Abrir": {
                 "icon": ft.Icons.UPLOAD_FILE,
                 "func": self._pick_text_file
+            },
+            "Preprocesar": {
+                "icon": ft.Icons.AUTO_FIX_HIGH,
+                "func": self._preprocess_high_level_code
             },
             "Compilar": {
                 "icon": ft.Icons.BUILD,
@@ -92,6 +99,27 @@ class FirstColumn():
 
     def _compile(self):
         self.relocatable_code_block.code_editor.value = self.high_level_code.code_editor.value
+        self.page.update()
+
+    def _preprocess_high_level_code(self, _=None):
+        program = (self.high_level_code.code_editor.value or "").strip()
+
+        if not program:
+            self.assembly_code.code_editor.value = ""
+            self.page.update()
+            return
+
+        try:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            preprocessed_program = preprocess_program(program, current_dir=project_root)
+        except Exception as exc:
+            self.assembly_code.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(content=ft.Text(f"Error al preprocesar: {exc}"), bgcolor=ft.Colors.RED_400)
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        self.assembly_code.code_editor.value = preprocessed_program
         self.page.update()
 
     def _assemble(self, _=None):
