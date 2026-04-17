@@ -1,7 +1,6 @@
 import flet as ft
 from .layout.first_column import FirstColumn
 from .layout.second_column import SecondColumn
-from .layout.col3 import col3
 
 class ComputerUI:
     def __init__(self, page: ft.Page):
@@ -27,8 +26,7 @@ class ComputerUI:
                 expand=True,
                 controls=[
                     self.first_col.first_column,
-                    self.second_col.second_column,
-                    col3()
+                    self.second_col.second_column
                 ]
             )
         )

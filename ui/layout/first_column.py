@@ -1,12 +1,18 @@
+import os
+
 import flet as ft
 from ..components.code_block import CodeBlock
 from ..components.button_panel import ButtonPanel
 from ..styles.styles import AppStyles
+from Disco.Compilador.Assembler import assemble_program
+from Disco.Compilador.Preprocessor import preprocess_program
+from Disco.Compilador.lexical_analyzer import LexicalAnalyzer
 
 class FirstColumn():
     def __init__(self, page: ft.Page, relocatable_code_block):
         self.page = page
         self.relocatable_code_block = relocatable_code_block
+        self.lexical_analyzer = LexicalAnalyzer()
         self._create_components()
         self._build_column()
 
@@ -18,6 +24,10 @@ class FirstColumn():
             "Abrir": {
                 "icon": ft.Icons.UPLOAD_FILE,
                 "func": self._pick_text_file
+            },
+            "Preprocesar": {
+                "icon": ft.Icons.AUTO_FIX_HIGH,
+                "func": self._preprocess_high_level_code
             },
             "Compilar": {
                 "icon": ft.Icons.BUILD,
@@ -32,28 +42,41 @@ class FirstColumn():
         assembly_btns = {
             "Ensamblar": {
                 "icon": ft.Icons.BUILD,
-                "func": lambda e: print("Compile")
+                "func": self._assemble
             },
             "Limpiar": {
                 "icon": ft.Icons.CLEANING_SERVICES,
-                "func": lambda e: print("Clean")
+                "func": self._clear_assembly
             }
         }
 
         self.high_level_panel_btns = ButtonPanel(high_level_btns)
+
+        lex_btns = {
+            "Analisis lexico": {
+                "icon": ft.Icons.SEARCH,
+                "func": self._lexical_analysis
+            }
+        }
+
+        self.high_level_lex_btn = ButtonPanel(lex_btns)
         self.assembly_code_panel_btns = ButtonPanel(assembly_btns)
         self.selected_file = ft.Text(style=AppStyles.file_text())
 
     def _build_column(self):
         self.first_column = ft.Container(
             **AppStyles.container(),
-            content=ft.Column([
-                self.high_level_code.code_block_comp,
-                self.selected_file,
-                self.high_level_panel_btns.button_panel_comp,
-                self.assembly_code.code_block_comp,
-                self.assembly_code_panel_btns.button_panel_comp
-            ]),
+            content=ft.Column(
+                scroll=ft.ScrollMode.AUTO,
+                controls=[
+                    self.high_level_code.code_block_comp,
+                    self.selected_file,
+                    self.high_level_panel_btns.button_panel_comp,
+                    self.high_level_lex_btn.button_panel_comp,
+                    self.assembly_code.code_block_comp,
+                    self.assembly_code_panel_btns.button_panel_comp
+                ]
+            ),
             expand=True
         )
 
@@ -88,4 +111,96 @@ class FirstColumn():
 
     def _compile(self):
         self.relocatable_code_block.code_editor.value = self.high_level_code.code_editor.value
+        self.page.update()
+
+    def _preprocess_high_level_code(self, _=None):
+        program = (self.high_level_code.code_editor.value or "").strip()
+
+        if not program:
+            self.assembly_code.code_editor.value = ""
+            self.page.update()
+            return
+
+        try:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            preprocessed_program = preprocess_program(program, current_dir=project_root)
+        except Exception as exc:
+            self.assembly_code.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(content=ft.Text(f"Error al preprocesar: {exc}"), bgcolor=ft.Colors.RED_400)
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        self.assembly_code.code_editor.value = preprocessed_program
+        self.page.update()
+
+    def _assemble(self, _=None):
+        assembly_code = (self.assembly_code.code_editor.value or "").strip()
+
+        if not assembly_code:
+            self.relocatable_code_block.code_editor.value = ""
+            self.page.update()
+            return
+
+        try:
+            relocatable_code = assemble_program(assembly_code)
+        except Exception as exc:
+            self.relocatable_code_block.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(content=ft.Text(f"Error al ensamblar: {exc}"), bgcolor=ft.Colors.RED_400)
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        self.relocatable_code_block.code_editor.value = relocatable_code
+        self.page.update()
+
+    def _lexical_analysis(self, _=None):
+        high_level_program = self.high_level_code.code_editor.value or ""
+
+        if not high_level_program.strip():
+            self.assembly_code.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text("No hay codigo de alto nivel para analizar"),
+                bgcolor=ft.Colors.RED_400,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        tokens, errors = self.lexical_analyzer.tokenize(high_level_program)
+
+        output_lines = [
+            "=== ANALISIS LEXICO ===",
+            "",
+            f"Tokens: {len(tokens)}",
+            f"Errores: {len(errors)}",
+            "",
+            f"{'LINE':<8} {'TYPE':<20} VALUE",
+            "-" * 60,
+        ]
+
+        for token in tokens:
+            output_lines.append(
+                f"{token['line']:<8} {token['type']:<20} {token['value']}"
+            )
+
+        if errors:
+            output_lines.append("")
+            output_lines.append("=== ERRORES LEXICOS ===")
+            for error in errors:
+                output_lines.append(
+                    f"Linea {error['line']}: {error['message']}"
+                )
+
+        self.assembly_code.code_editor.value = "\n".join(output_lines)
+        self.page.snack_bar = ft.SnackBar(
+            content=ft.Text("Analisis lexico completado"),
+            bgcolor=ft.Colors.GREEN_400,
+        )
+        self.page.snack_bar.open = True
+        self.page.update()
+
+    def _clear_assembly(self, _=None):
+        self.assembly_code.code_editor.value = ""
+        self.relocatable_code_block.code_editor.value = ""
         self.page.update()

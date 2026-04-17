@@ -132,6 +132,7 @@ class LexicalAnalyzer:
     t_COLON     = r':'
 
     def __init__(self):
+        self.errors = []
         self.lexer = lex.lex(module=self)
 
     def t_FLOAT_LITERAL(self, t):
@@ -200,21 +201,49 @@ class LexicalAnalyzer:
     # Manejo de errores
 
     def t_error(self, t):
-        print(f"[ERROR LÉXICO] Línea {t.lineno}: carácter ilegal '{t.value[0]}'")
+        self.errors.append(
+            {
+                "line": t.lineno,
+                "char": t.value[0],
+                "message": f"Caracter ilegal '{t.value[0]}'",
+            }
+        )
         t.lexer.skip(1)
+
+    def tokenize(self, program: str):
+        """Tokeniza el codigo fuente y retorna (tokens, errores)."""
+        self.lexer.input(program)
+        self.lexer.lineno = 1
+        self.errors = []
+
+        tokens = []
+        for tok in self.lexer:
+            tokens.append(
+                {
+                    "line": tok.lineno,
+                    "type": tok.type,
+                    "value": tok.value,
+                }
+            )
+
+        return tokens, list(self.errors)
 
 
     def analyze(self, program: str):
         """Tokeniza el código fuente e imprime la tabla de tokens."""
-        self.lexer.input(program)
-        self.lexer.lineno = 1
+        tokens, errors = self.tokenize(program)
 
         print(f"\n{'='*60}")
         print(f"{'LINE':<8} {'TYPE':<20} {'VALUE'}")
         print(f"{'='*60}")
 
-        for tok in self.lexer:
-            print(f"{tok.lineno:<8} {tok.type:<20} {tok.value}")
+        for tok in tokens:
+            print(f"{tok['line']:<8} {tok['type']:<20} {tok['value']}")
+
+        if errors:
+            print("\nErrores lexicos:")
+            for error in errors:
+                print(f"  - Linea {error['line']}: {error['message']}")
 
         print(f"{'='*60}\n")
 
