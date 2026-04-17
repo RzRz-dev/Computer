@@ -2,6 +2,7 @@ import flet as ft
 from ..components.code_block import CodeBlock
 from ..components.button_panel import ButtonPanel
 from ..styles.styles import AppStyles
+from Disco.Compilador.Assembler import assemble_program
 
 class FirstColumn():
     def __init__(self, page: ft.Page, relocatable_code_block):
@@ -32,11 +33,11 @@ class FirstColumn():
         assembly_btns = {
             "Ensamblar": {
                 "icon": ft.Icons.BUILD,
-                "func": lambda e: print("Compile")
+                "func": self._assemble
             },
             "Limpiar": {
                 "icon": ft.Icons.CLEANING_SERVICES,
-                "func": lambda e: print("Clean")
+                "func": self._clear_assembly
             }
         }
 
@@ -91,4 +92,29 @@ class FirstColumn():
 
     def _compile(self):
         self.relocatable_code_block.code_editor.value = self.high_level_code.code_editor.value
+        self.page.update()
+
+    def _assemble(self, _=None):
+        assembly_code = (self.assembly_code.code_editor.value or "").strip()
+
+        if not assembly_code:
+            self.relocatable_code_block.code_editor.value = ""
+            self.page.update()
+            return
+
+        try:
+            relocatable_code = assemble_program(assembly_code)
+        except Exception as exc:
+            self.relocatable_code_block.code_editor.value = ""
+            self.page.snack_bar = ft.SnackBar(content=ft.Text(f"Error al ensamblar: {exc}"), bgcolor=ft.Colors.RED_400)
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        self.relocatable_code_block.code_editor.value = relocatable_code
+        self.page.update()
+
+    def _clear_assembly(self, _=None):
+        self.assembly_code.code_editor.value = ""
+        self.relocatable_code_block.code_editor.value = ""
         self.page.update()

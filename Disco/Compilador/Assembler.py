@@ -146,14 +146,27 @@ def encode_64(value) -> str:
     return format(to_unsigned_64(int(value)), '064b')
 
 
-# ========================
-# PARSER SIMPLE
-# ========================
-def parse_etiq(line):
-    lexer.input(line)
-    
+def _reset_state():
     global linea
-    
+    etiquetas.clear()
+    linea = 0
+
+
+def _strip_comment(line):
+    return line.split(';', 1)[0].strip()
+
+
+def _strip_label_prefix(line):
+    if ':' not in line:
+        return line.strip()
+
+    _, _, remainder = line.partition(':')
+    return remainder.strip()
+
+
+def _tokenize(line):
+    lexer.input(line)
+
     tokens_list = []
     while True:
         tok = lexer.token()
@@ -161,70 +174,117 @@ def parse_etiq(line):
             break
         tokens_list.append(tok)
 
-    if len(tokens_list) == 1:
-        if(tokens_list[0].type == 'ETIQUETA'):
-            etiqueta = tokens_list[0].value
-            etiquetas[str(etiqueta)] = linea
-            linea -=1
+    return tokens_list
 
-def parse_line(line):
-    lexer.input(line)
 
+def _collect_labels(lines):
     global linea
-    
-    outputs = []  # Lista para acumular los outputs en lugar de imprimir
-    
-    tokens_list = []
-    while True:
-        tok = lexer.token()
-        if not tok:
-            break
-        tokens_list.append(tok)
+
+    linea = 0
+    etiquetas.clear()
+
+    for raw_line in lines:
+        line = _strip_comment(raw_line)
+        if not line:
+            continue
+
+        if ':' in line:
+            label, _, remainder = line.partition(':')
+            label = label.strip()
+            if label:
+                etiquetas[label] = linea
+            line = remainder.strip()
+            if not line:
+                continue
+
+        tokens_list = _tokenize(line)
+        if len(tokens_list) == 1 and tokens_list[0].type == 'ETIQUETA':
+            etiquetas[str(tokens_list[0].value)] = linea
+            continue
+
+        if tokens_list:
+            linea += 1
+
+
+def _assemble_line(line):
+    outputs = []
+    tokens_list = _tokenize(line)
 
     if len(tokens_list) == 1:
-        if(tokens_list[0].type == 'ETIQUETA'):
-            etiqueta = tokens_list[0].value
-            etiquetas[str(etiqueta)] = linea
-            linea -=1
-            
-        if(tokens_list[0].type == 'INSTR'):
+        if tokens_list[0].type == 'INSTR':
             instr = tokens_list[0].value
             outputs.append(format(opcodes[instr], '064b'))
-            
-        if(tokens_list[0].type == 'NUMBER'):
+
+        if tokens_list[0].type == 'NUMBER':
             num = tokens_list[0].value
             outputs.append(encode_64(num))
-        
+
     if len(tokens_list) == 2:
         instr = tokens_list[0].value
-        if(tokens_list[1].type == 'REGISTER'):
+        if tokens_list[1].type == 'REGISTER':
             r1 = tokens_list[1].value
             outputs.append(format(opcodes[instr], '056b') + format(r1, '04b'))
-        if(tokens_list[1].type == 'ETIQUETA'):
-            etiqueta = '('+ str(etiquetas[tokens_list[1].value]) +')'
-            outputs.append(format(opcodes[instr], '012b') + '' + etiqueta)
-        
-        
+        if tokens_list[1].type == 'ETIQUETA':
+            etiqueta = '(' + str(etiquetas[tokens_list[1].value]) + ')'
+            outputs.append(format(opcodes[instr], '012b') + etiqueta)
+
     if len(tokens_list) == 4:
         instr = tokens_list[0].value
         r1 = tokens_list[1].value
-        
-        if(tokens_list[3].type == 'REGISTER'):
+
+        if tokens_list[3].type == 'REGISTER':
             r2 = tokens_list[3].value
             outputs.append(format(opcodes[instr], '056b') + format(r1, '04b') + format(r2, '04b'))
-        
-        if(tokens_list[3].type == 'NUMBER'):
+
+        if tokens_list[3].type == 'NUMBER':
             num = tokens_list[3].value
             outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + encode_64(num))
-        
-        
-        if(tokens_list[3].type == 'ETIQUETA'):
-            etiqueta = '('+ str(etiquetas[tokens_list[3].value]) +')'
-            outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + '' + etiqueta)
-        
-        
 
-    return outputs  # Devolver la lista de outputs
+        if tokens_list[3].type == 'ETIQUETA':
+            etiqueta = '(' + str(etiquetas[tokens_list[3].value]) + ')'
+            outputs.append(format(opcodes[instr], '08b') + format(r1, '04b') + etiqueta)
+
+    return outputs
+
+
+def assemble_program(program: str) -> str:
+    lines = program.splitlines()
+    _collect_labels(lines)
+
+    global linea
+    linea = 0
+
+    outputs = []
+    for raw_line in lines:
+        line = _strip_comment(raw_line)
+        if not line:
+            continue
+
+        if ':' in line:
+            _, _, line = line.partition(':')
+            line = line.strip()
+            if not line:
+                continue
+
+        line_outputs = _assemble_line(line)
+        outputs.extend(line_outputs)
+        if line_outputs:
+            linea += 1
+
+    return '\n'.join(outputs)
+
+
+def assemble_file(input_file: str) -> str:
+    with open(input_file, 'r', encoding='utf-8') as infile:
+        return assemble_program(infile.read())
+
+
+def parse_etiq(line):
+    _collect_labels([line])
+
+
+def parse_line(line):
+    return _assemble_line(_strip_label_prefix(_strip_comment(line)))
 
 # ========================
 # MAIN
@@ -238,23 +298,10 @@ if __name__ == "__main__":
     output_file = os.path.join(os.path.dirname(input_file), 'program1.bin')
     
     try:
-        with open(input_file, 'r') as infile:
-            
-            for l in infile:
-                l = l.strip()
-                if l:  # Si la línea no está vacía
-                    parse_etiq(l)
-                    linea +=1
-                    
-        with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
-            linea = 0
-            for line in infile:
-                line = line.strip()  # Remover espacios en blanco
-                if line:  # Si la línea no está vacía
-                    outputs = parse_line(line)
-                    for output in outputs:
-                        outfile.write(output + '\n')
-                    linea += 1
+        program = assemble_file(input_file)
+        with open(output_file, 'w', encoding='utf-8') as outfile:
+            if program:
+                outfile.write(program + '\n')
     except FileNotFoundError:
         print(f"Error: No se pudo encontrar el archivo {input_file}")
     except Exception as e:
