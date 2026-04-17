@@ -1,4 +1,5 @@
 import flet as ft
+import inspect
 from ..styles.styles import AppStyles
 
 class ButtonPanel():
@@ -14,8 +15,18 @@ class ButtonPanel():
                 ft.ElevatedButton(
                     key,
                     icon=value.get("icon"),
-                    on_click=value.get("func"),
+                    on_click=self._wrap_handler(value.get("func")),
                     **AppStyles.elevated_button(),
                 )for key, value in self.arr_btns.items()
             ]
         )
+
+    def _wrap_handler(self, handler):
+        if not callable(handler):
+            return None
+
+        params_count = len(inspect.signature(handler).parameters)
+        if params_count == 0:
+            return lambda _: handler()
+
+        return handler

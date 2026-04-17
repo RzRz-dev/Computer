@@ -7,7 +7,7 @@ from ..components.base_address_block import BaseAddressBlock
 from ..components.button_panel import ButtonPanel
 from RAM.dataRam import ram
 from Utilities.execute import Execute
-from Utilities.loader import loader
+from Disco.Compilador.link_loader import LinkLoader
 
 class SecondColumn:
     def __init__(self, page: ft.Page):
@@ -26,7 +26,7 @@ class SecondColumn:
         }
 
         execute_btns={
-            "Ejecutar": {
+            "Ejecutar RAM": {
                 "icon": ft.Icons.PLAY_ARROW,
                 "func": self._auto_execution
             },
@@ -40,9 +40,16 @@ class SecondColumn:
         }
 
         self.relocatable_code = CodeBlock("Código relocalizable", lines=15)
-        self.ram_block = RamBlock()
-        self.mod_ram_block = ModRamBlock()
+        self.ram_block = RamBlock(on_execute=self._auto_execution)
+        self.mod_ram_block = ModRamBlock(on_modify=self._mod_ram_write)
         self.base_address_block = BaseAddressBlock()
+        self.entry_point_field = ft.TextField(
+            label="Entrada (HEX)",
+            hint_text="Ej: 0F",
+            capitalization=ft.TextCapitalization.CHARACTERS,
+            width=190,
+            value=self.base_address,
+        )
         self.link_load_btn = ButtonPanel(link_load_btn)
         self.execute_btns = ButtonPanel(execute_btns)
 
@@ -50,6 +57,7 @@ class SecondColumn:
         self.second_column = ft.Container(
             **AppStyles.container(),
             content=ft.Column(
+                scroll=ft.ScrollMode.AUTO,
                 controls=[
                 self.relocatable_code.code_block_comp,
                 ft.Row(
@@ -60,25 +68,71 @@ class SecondColumn:
                 ),
                 self.ram_block.ram_block_comp,
                 self.mod_ram_block.mod_ram_block_comp,
+                self.entry_point_field,
                 self.execute_btns.button_panel_comp
             ]),
             expand=2
         )
 
-    def _load_link_code(self):
-        self.base_address = self.base_address_block.base_address.value or "0"
-        loader.set_base_hex(self.base_address)
-        loader.load_program2(self.relocatable_code.code_editor.value)
-        self.ram_block.ram_list.controls.clear()
-        self.ram_block.ram_list.controls.extend([ft.Text(f" [{k}] → {v}", style=AppStyles.list_text()) for k, v in ram.storage.items()])
+    def _load_link_code(self, _=None):
+        base_hex = (self.base_address_block.base_address.value or "0").strip()
+        try:
+            base_address = int(base_hex, 16)
+        except ValueError:
+            self._show_message("La dirección base debe ser HEX válida", ft.Colors.RED_400)
+            return
+
+        code = (self.relocatable_code.code_editor.value or "").strip()
+        if not code:
+            self._show_message("No hay código relocalizable para enlazar", ft.Colors.RED_400)
+            return
+
+        try:
+            loader = LinkLoader(base_address=base_address, memory=ram)
+            entry_point = loader.link_load(code)
+        except Exception as exc:
+            self._show_message(f"Error al enlazar/cargar: {exc}", ft.Colors.RED_400)
+            return
+
+        self.base_address = format(entry_point, "X")
+        self.entry_point_field.value = self.base_address
+        self.base_address_block.base_address.value = self.base_address
+        self.ram_block.refresh()
         self.page.update()
+        self._show_message(f"Programa cargado. Entry point: 0x{self.base_address}", ft.Colors.GREEN_400)
 
-    def _auto_execution(self):
+    def _auto_execution(self, _=None):
+        entry_hex = (self.entry_point_field.value or self.base_address or "0").strip()
+        try:
+            entry_point = int(entry_hex, 16)
+        except ValueError:
+            self._show_message("La dirección de entrada debe ser HEX válida", ft.Colors.RED_400)
+            return
+
+        self.execute = Execute(entry_point)
         self.execute.set_auto_mode_value(True)
-        self.execute.set_current_isntruction(self.base_address)
         self.execute.execute_program()
+        self.ram_block.refresh()
+        self.page.update()
+        self._show_message(f"Ejecución finalizada desde 0x{entry_hex.upper()}", ft.Colors.GREEN_400)
 
-    def _step_execution(self):
-        self.execute.set_auto_mode_value(False)
-        self.execute.set_current_isntruction(self.base_address)
-        self.execute.execute_program()
+    def _step_execution(self, _=None):
+        self._show_message("En UI se ejecuta en modo automático. Use 'Ejecutar RAM'.", ft.Colors.ORANGE_400)
+
+    def _mod_ram_write(self, _=None):
+        address_hex = self.mod_ram_block.address_field.value
+        word_hex = self.mod_ram_block.word_content.value
+        success, message = self.ram_block.write_direct(address_hex, word_hex)
+
+        if not success:
+            self._show_message(message, ft.Colors.RED_400)
+            return
+
+        self.ram_block.refresh()
+        self.page.update()
+        self._show_message(message, ft.Colors.GREEN_400)
+
+    def _show_message(self, message: str, color: str):
+        self.page.snack_bar = ft.SnackBar(content=ft.Text(message), bgcolor=color)
+        self.page.snack_bar.open = True
+        self.page.update()
