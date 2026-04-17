@@ -47,13 +47,16 @@ class FirstColumn():
     def _build_column(self):
         self.first_column = ft.Container(
             **AppStyles.container(),
-            content=ft.Column([
-                self.high_level_code.code_block_comp,
-                self.selected_file,
-                self.high_level_panel_btns.button_panel_comp,
-                self.assembly_code.code_block_comp,
-                self.assembly_code_panel_btns.button_panel_comp
-            ]),
+            content=ft.Column(
+                scroll=ft.ScrollMode.AUTO,
+                controls=[
+                    self.high_level_code.code_block_comp,
+                    self.selected_file,
+                    self.high_level_panel_btns.button_panel_comp,
+                    self.assembly_code.code_block_comp,
+                    self.assembly_code_panel_btns.button_panel_comp
+                ]
+            ),
             expand=True
         )
 

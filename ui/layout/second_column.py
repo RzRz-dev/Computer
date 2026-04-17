@@ -50,6 +50,15 @@ class SecondColumn:
             width=190,
             value=self.base_address,
         )
+        self.execution_state = ft.TextField(
+            label="Estado de registros y banderas",
+            multiline=True,
+            read_only=True,
+            min_lines=8,
+            max_lines=12,
+            expand=True,
+            value="Aún no se ha ejecutado ningún programa.",
+        )
         self.link_load_btn = ButtonPanel(link_load_btn)
         self.execute_btns = ButtonPanel(execute_btns)
 
@@ -69,6 +78,11 @@ class SecondColumn:
                 self.ram_block.ram_block_comp,
                 self.mod_ram_block.mod_ram_block_comp,
                 self.entry_point_field,
+                ft.Container(
+                    **AppStyles.list_view(),
+                    padding=10,
+                    content=self.execution_state,
+                ),
                 self.execute_btns.button_panel_comp
             ]),
             expand=2
@@ -112,6 +126,7 @@ class SecondColumn:
         self.execute = Execute(entry_point)
         self.execute.set_auto_mode_value(True)
         self.execute.execute_program()
+        self.execution_state.value = self.execute.get_final_state_text()
         self.ram_block.refresh()
         self.page.update()
         self._show_message(f"Ejecución finalizada desde 0x{entry_hex.upper()}", ft.Colors.GREEN_400)
