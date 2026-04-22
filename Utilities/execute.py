@@ -6,6 +6,7 @@ from CPU.registers import registers
 from CPU.flags import flags
 
 STACK_BASE = ram.STACK_START
+END_PROGRAM = 1
 
 class Execute:
     def __init__(self, current_instruction=0):
@@ -26,10 +27,58 @@ class Execute:
         registers.stack_pointer = STACK_BASE
         print(f"Stack initialized at 0x{STACK_BASE:04X}")
 
+    def exceute_step(self):
+    
+        current_addr = self.program_counter.get_next_instruction()
+        print(f"\nAddress: {format(current_addr, '016X')}")
+
+        if current_addr >= self.ram.DATA_START:
+            print("End of program reached (data segment).")
+            return END_PROGRAM
+
+        word = self.ram.read(current_addr)
+        if word == "0" * self.ram.WORD_SIZE_HEX:
+            print("End of program reached (empty word).")
+            return END_PROGRAM
+
+        self.program_counter.set_next_instruction()
+
+        instruction = self.fetcher.fetch_instruction(current_addr)
+        Decoder.decode(instruction)
+        
+        return 0
+
+    def execute_program_auto(self):
+        
+        while True:
+            end_program = self.exceute_step()
+            print(f"Registers: {registers.values}")
+            print(f"Flags: {flags}")
+            if end_program == END_PROGRAM:
+                break
+            
+
     def execute_program(self):
         print("========= Starting Program Execution =========")
         print("Tip: Press 'Enter' to step, or type 'auto' for continuous execution.")
-
+        
+        input_us = input().lower()
+        self.set_auto_mode_value(input_us)
+        
+        if not self.auto_mode:
+            while True:
+                
+                if self.exceute_step() == END_PROGRAM:
+                    break
+                
+                user_input = input("Press Enter to step: ").strip().lower()
+        else:
+            self.execute_program_auto()
+        
+        self._print_final_state()
+        print("========= Program Execution Finished =========")
+        
+        
         while True:
             current_addr = self.program_counter.get_next_instruction()
             print(f"\nAddress: {format(current_addr, '016X')}")

@@ -115,6 +115,15 @@ class SecondColumn:
         self.page.update()
         self._show_message(f"Programa cargado. Entry point: 0x{self.base_address}", ft.Colors.GREEN_400)
 
+    def _init_execution(self, _=None):
+        entry_hex = (self.entry_point_field.value or self.base_address or "0").strip()
+        try:
+            entry_point = int(entry_hex, 16)
+        except ValueError:
+            self._show_message("La dirección de entrada debe ser HEX válida", ft.Colors.RED_400)
+            return
+
+        self.execute = Execute(entry_point)
     def _auto_execution(self, _=None):
         entry_hex = (self.entry_point_field.value or self.base_address or "0").strip()
         try:
@@ -125,7 +134,7 @@ class SecondColumn:
 
         self.execute = Execute(entry_point)
         self.execute.set_auto_mode_value(True)
-        self.execute.execute_program()
+        self.execute.execute_program_auto()
         self.execution_state.value = self.execute.get_final_state_text()
         self.ram_block.refresh()
         self.page.update()

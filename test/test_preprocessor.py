@@ -21,7 +21,7 @@ def test_preprocess_program_does_not_leak_macros_between_calls():
     second = preprocess_program("LOAD R1, VALUE\n")
 
     assert first.splitlines() == ["LOAD R1, 9"]
-    assert second.splitlines() == ["LOAD R1 , VALUE"]
+    assert second.splitlines() == ["LOAD R1, VALUE"]
 
 
 def test_preprocess_program_preserves_non_directive_source_text():
