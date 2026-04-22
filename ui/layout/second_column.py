@@ -16,6 +16,7 @@ class SecondColumn:
         self.execute = Execute()
         self._create_components()
         self._build_column()
+        self.band = False
 
     def _create_components(self):
         link_load_btn = {
@@ -116,32 +117,38 @@ class SecondColumn:
         self._show_message(f"Programa cargado. Entry point: 0x{self.base_address}", ft.Colors.GREEN_400)
 
     def _init_execution(self, _=None):
+        global entry_hex
         entry_hex = (self.entry_point_field.value or self.base_address or "0").strip()
         try:
             entry_point = int(entry_hex, 16)
         except ValueError:
             self._show_message("La dirección de entrada debe ser HEX válida", ft.Colors.RED_400)
             return
-
+        self.band = True
         self.execute = Execute(entry_point)
+        
     def _auto_execution(self, _=None):
-        entry_hex = (self.entry_point_field.value or self.base_address or "0").strip()
-        try:
-            entry_point = int(entry_hex, 16)
-        except ValueError:
-            self._show_message("La dirección de entrada debe ser HEX válida", ft.Colors.RED_400)
-            return
-
-        self.execute = Execute(entry_point)
+        
+        self._init_execution()
+        
         self.execute.set_auto_mode_value(True)
         self.execute.execute_program_auto()
         self.execution_state.value = self.execute.get_final_state_text()
         self.ram_block.refresh()
         self.page.update()
+        self.band = False
         self._show_message(f"Ejecución finalizada desde 0x{entry_hex.upper()}", ft.Colors.GREEN_400)
 
     def _step_execution(self, _=None):
-        self._show_message("En UI se ejecuta en modo automático. Use 'Ejecutar RAM'.", ft.Colors.ORANGE_400)
+        
+        if self.band == False:
+            self._init_execution()
+        if self.execute.exceute_step() == 1:
+            band = False
+            pass
+        self.execution_state.value = self.execute.get_final_state_text()
+        self.ram_block.refresh()
+        self.page.update()
 
     def _mod_ram_write(self, _=None):
         address_hex = self.mod_ram_block.address_field.value
