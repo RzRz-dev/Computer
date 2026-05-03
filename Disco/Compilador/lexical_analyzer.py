@@ -2,6 +2,11 @@ import ply.lex as lex
 
 class LexicalAnalyzer:
 
+    def __init__(self):
+        self.errors = []
+        self.symbol_table = {}
+        self.lexer = lex.lex(module=self)
+
     reserved = {
         # -- Tipos de datos primitivos --
         'int'       : 'INT',
@@ -131,10 +136,6 @@ class LexicalAnalyzer:
     t_DOT       = r'\.'
     t_COLON     = r':'
 
-    def __init__(self):
-        self.errors = []
-        self.lexer = lex.lex(module=self)
-
     def t_FLOAT_LITERAL(self, t):
         r'[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?'
         # Extensión regular: dígitos '.' dígitos  con exponente opcional
@@ -172,6 +173,15 @@ class LexicalAnalyzer:
         # Definición regular: LETTER (LETTER | DIGIT)*
         # Si el lexema está en la tabla de reservadas, cambia el tipo
         t.type = self.reserved.get(t.value, 'ID')
+
+        # Agrega a la tabla de símbolos si es un identificador
+        if t.type == 'ID':
+            if t.value not in self.symbol_table:
+                self.symbol_table[t.value] = {
+                    "name": t.value,
+                    "type": None,
+                }
+
         return t
 
 
