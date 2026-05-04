@@ -22,9 +22,6 @@ class LexicalAnalyzer:
         # -- Estructuras de selección --
         'if'        : 'IF',
         'else'      : 'ELSE',
-        'switch'    : 'SWITCH',
-        'case'      : 'CASE',
-        'default'   : 'DEFAULT',
 
         # -- Estructuras de iteración --
         'while'     : 'WHILE',
@@ -93,7 +90,7 @@ class LexicalAnalyzer:
         'SEMICOLON',        # ;
         'COMMA',            # ,
         'DOT',              # .  
-        'COLON',            # :
+ 
 
     ] + list(reserved.values())
 
@@ -134,7 +131,6 @@ class LexicalAnalyzer:
     t_SEMICOLON = r';'
     t_COMMA     = r','
     t_DOT       = r'\.'
-    t_COLON     = r':'
 
     def t_FLOAT_LITERAL(self, t):
         r'[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?'

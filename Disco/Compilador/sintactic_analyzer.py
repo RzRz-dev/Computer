@@ -40,6 +40,7 @@ def p_declaration_list_single(p):
 def p_declaration(p):
     '''declaration : func_decl
                    | struct_decl
+                   | typedef_decl
                    | var_decl'''
     p[0] = p[1]
 
@@ -97,6 +98,11 @@ def p_array_size_opt(p):
     '''array_size_opt : LBRACKET INT_LITERAL RBRACKET
                       | empty'''
     p[0] = p[1:]
+
+def p_typedef_decl(p):
+    'typedef_decl : TYPEDEF type ID SEMICOLON'
+    p[0] = ("typedef", p[2], p[3])
+
 
 # -------------------------------------------------
 # TYPES
@@ -162,7 +168,13 @@ def p_statement(p):
                  | assign_stmt
                  | if_stmt
                  | while_stmt
+                 | for_stmt
+                 | do_while_stmt
                  | return_stmt
+                 | break_stmt
+                 | continue_stmt
+                 | push_stmt
+                 | pop_stmt
                  | func_call_stmt
                  | block'''
     p[0] = p[1]
@@ -204,35 +216,6 @@ def p_lvalue_access(p):
                      | LBRACKET expr RBRACKET'''
     p[0] = p[1:]
 
-# -------------------------------------------------
-# IF / WHILE
-# -------------------------------------------------
-
-def p_if_stmt(p):
-    'if_stmt : IF LPAREN expr RPAREN block else_opt'
-    p[0] = ("if", p[3], p[5], p[6])
-
-def p_else_opt(p):
-    '''else_opt : ELSE block
-                | empty'''
-    p[0] = p[2] if len(p) > 2 else None
-
-def p_while_stmt(p):
-    'while_stmt : WHILE LPAREN expr RPAREN block'
-    p[0] = ("while", p[3], p[5])
-
-# -------------------------------------------------
-# RETURN
-# -------------------------------------------------
-
-def p_return_stmt(p):
-    'return_stmt : RETURN expr_opt SEMICOLON'
-    p[0] = ("return", p[2])
-
-def p_expr_opt(p):
-    '''expr_opt : expr
-                | empty'''
-    p[0] = p[1]
 
 # -------------------------------------------------
 # FUNC CALL
@@ -258,6 +241,99 @@ def p_arg_list_multi(p):
 def p_arg_list_single(p):
     'arg_list : expr'
     p[0] = [p[1]]
+
+
+# -------------------------------------------------
+# IF, ELSE IF, ELSE
+# -------------------------------------------------
+
+def p_if_stmt(p):
+    'if_stmt : IF LPAREN expr RPAREN block else_if_opt else_opt'
+    p[0] = ("if", p[3], p[5], p[6])
+
+def p_else_if_opt(p):
+    '''else_if_opt : else_if_list
+                   | empty'''
+    p[0] = p[1]
+
+def p_else_if_list(p):
+    'else_if_list : else_if_list ELSE IF LPAREN expr RPAREN block'
+    p[0] = p[1] + [("elif", p[4], p[6])]
+
+def p_else_if_single(p):
+    'else_if_list : ELSE IF LPAREN expr RPAREN block'
+    p[0] = [("elif", p[3], p[5])]
+
+def p_else_opt(p):
+    '''else_opt : ELSE block
+                | empty'''
+    p[0] = p[2] if len(p) > 2 else None
+
+# -------------------------------------------------
+# WHILE, FOR, DO-WHILE
+# -------------------------------------------------
+
+def p_while_stmt(p):
+    'while_stmt : WHILE LPAREN expr RPAREN block'
+    p[0] = ("while", p[3], p[5])
+
+def p_for_stmt(p):
+    'for_stmt : FOR LPAREN for_init SEMICOLON expr_opt SEMICOLON for_update RPAREN block'
+    p[0] = ("for", p[3], p[5], p[7], p[9])
+
+def p_for_init(p):
+    '''for_init : var_decl_inline
+                | assign_stmt_inline
+                | empty'''
+    p[0] = p[1]
+
+def p_for_update(p):
+    '''for_update : assign_stmt_inline_list
+                  | empty'''
+    p[0] = p[1]
+
+def p_assign_stmt_inline_list(p):
+    'assign_stmt_inline_list : assign_stmt_inline_list COMMA assign_stmt_inline'
+    p[0] = p[1] + [p[3]]
+
+def p_assign_stmt_inline_single(p):
+    'assign_stmt_inline_list : assign_stmt_inline'
+    p[0] = [p[1]]
+
+def p_assign_stmt_inline(p):
+    'assign_stmt_inline : lvalue assign_op expr'
+    p[0] = ("assign", p[1], p[2], p[3])
+
+def p_var_decl_inline(p):
+    'var_decl_inline : type ID init_opt'
+    p[0] = ("var_decl", p[1], p[2], p[3])
+
+def p_do_while_stmt(p):
+    'do_while_stmt : DO block WHILE LPAREN expr RPAREN SEMICOLON'
+    p[0] = ("do_while", p[2], p[5])
+
+
+# -------------------------------------------------
+# RETURN, BREAK, CONTINUE
+# -------------------------------------------------
+
+def p_return_stmt(p):
+    'return_stmt : RETURN expr_opt SEMICOLON'
+    p[0] = ("return", p[2])
+
+def p_break_stmt(p):
+    'break_stmt : BREAK SEMICOLON'
+    p[0] = ("break",)
+
+def p_continue_stmt(p):
+    'continue_stmt : CONTINUE SEMICOLON'
+    p[0] = ("continue",)
+
+def p_expr_opt(p):
+    '''expr_opt : expr
+                | empty'''
+    p[0] = p[1]
+
 
 # -------------------------------------------------
 # EXPRESSIONS
@@ -335,6 +411,17 @@ def p_primary(p):
     p[0] = p[1] if len(p) == 2 else p[2]
 
 # -------------------------------------------------
+# PUSH, POP
+# -------------------------------------------------
+def p_push_stmt(p):
+    'push_stmt : PUSH LPAREN expr RPAREN SEMICOLON'
+    p[0] = ("push", p[3])
+
+def p_pop_stmt(p):
+    'pop_stmt : POP LPAREN RPAREN SEMICOLON'
+    p[0] = ("pop",)
+
+# -------------------------------------------------
 # LITERALS
 # -------------------------------------------------
 
@@ -346,6 +433,7 @@ def p_literal(p):
                | TRUE
                | FALSE'''
     p[0] = p[1]
+
 
 # -------------------------------------------------
 # EMPTY
