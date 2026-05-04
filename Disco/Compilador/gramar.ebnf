@@ -63,7 +63,7 @@ do_while_stmt ::= 'do' block 'while' '(' expr ')' ';'
 
 expr ::= logic_or
 logic_or ::= logic_and ('||' logic_and)*
-lagoc_and ::= equality ('&&' equality)*
+logicc_and ::= equality ('&&' equality)*
 equality ::= relational (('==' | '!=') relational)*
 relational ::= additive (('<' | ' >' | '<=' | '>=') additive)*
 additive ::= term (('+' | '-') term)*

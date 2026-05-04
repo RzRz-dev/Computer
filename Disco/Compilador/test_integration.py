@@ -23,8 +23,7 @@ struct Punto {
         char letra = 'A';
         int arr[10];
         int mat[3][3];
-    
-        struct Punto p;
+
         p.x = 5;
         p.y = 10;
     
@@ -34,7 +33,10 @@ struct Punto {
         } else {
             resultado = 0;
         }
-    
+
+        while (x < 10){
+            i = 0;
+            i = i + 1;}
         // Estructura de iteración
         int i = 0;
         while (i < 10) {
@@ -47,8 +49,7 @@ struct Punto {
         }
     
         // Manejo de pila
-        push(resultado);
-        int valor = pop();
+
     }
 """
 

@@ -248,20 +248,21 @@ def p_arg_list_single(p):
 # -------------------------------------------------
 
 def p_if_stmt(p):
-    'if_stmt : IF LPAREN expr RPAREN block else_if_opt else_opt'
+    'if_stmt : IF LPAREN expr RPAREN block else_if_opt'
     p[0] = ("if", p[3], p[5], p[6])
 
 def p_else_if_opt(p):
     '''else_if_opt : else_if_list
+                   | else_opt
                    | empty'''
     p[0] = p[1]
 
 def p_else_if_list(p):
-    'else_if_list : else_if_list ELSE IF LPAREN expr RPAREN block'
+    'else_if_list : ELSE IF LPAREN expr RPAREN block else_if_list'
     p[0] = p[1] + [("elif", p[4], p[6])]
 
 def p_else_if_single(p):
-    'else_if_list : ELSE IF LPAREN expr RPAREN block'
+    'else_if_list : ELSE IF LPAREN expr RPAREN block else_if_opt'
     p[0] = [("elif", p[3], p[5])]
 
 def p_else_opt(p):
