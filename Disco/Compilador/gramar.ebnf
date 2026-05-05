@@ -1,16 +1,19 @@
+ /* Programa principal */ 
 program ::= declaration+
 
 declaration ::= (func_decl | struct_decl | typedef_decl | var_decl)+
 
-func_decl ::= 'func' type ID '(' param_list ')' block
+func_decl ::= 'func' type ID '(' param_list? ')' block
 
-param_list ::= param? (',' param)*
+param_list ::= param (',' param)*
 param ::= type ID ('[' ']')?
 
-struct_decl ::= 'struct' ID '{' (field_decl)* '}'
-field_decl ::= type ID ('[' INT_LITERAL ']')? ';'
+struct_decl ::= 'struct' ID '{' (field_decl)* '}' ';'
+field_decl ::= type ID (array_suffix | matrix_suffix)? ';'
 
-type ::= primitive_type | ID
+typedef_decl ::= 'typedef' 'struct' '{' (field_decl)* '}' ID ';'
+
+type ::= primitive_type | 'struct'? ID
 
 primitive_type ::= 'int' | 'float' | 'char' | 'bool' | 'void'
 
@@ -25,12 +28,9 @@ statement ::= var_decl
             | while_stmt 
             | for_stmt 
             | do_while_stmt 
-            | switch_stmt 
             | return_stmt 
             | break_stmt 
             | continue_stmt 
-            | push_stmt 
-            | pop_stmt 
             | func_call_stmt 
             | block
 
@@ -43,9 +43,6 @@ return_stmt ::= 'return' (expr)? ';'
 break_stmt ::= 'break' ';'
 continue_stmt ::= 'continue' ';'
 
-push_stmt ::= 'push' '(' expr ')' ';'
-pop_stmt ::= 'pop' '(' ')' ';'
-
 if_stmt ::= 'if' '(' expr ')' block ('elseif' '(' expr ')' block)* ('else' block)?
 
 
@@ -53,7 +50,7 @@ while_stmt ::= 'while' '(' expr ')' block
 
 for_stmt ::= 'for' '(' for_init ';' (expr)? ';' (for_update)? ')' block
 for_init ::= var_decl_inline | assign_stmt_inline | /*vacio*/
-for_update ::= assign_stmt_inline (',' assing_stmt_inline)*
+for_update ::= assign_stmt_inline (',' assign_stmt_inline)*
 
 var_decl_inline ::= type ID ('=' expr)?
 assign_stmt_inline ::= lvalue assign_op expr
@@ -65,7 +62,7 @@ expr ::= logic_or
 logic_or ::= logic_and ('||' logic_and)*
 logicc_and ::= equality ('&&' equality)*
 equality ::= relational (('==' | '!=') relational)*
-relational ::= additive (('<' | ' >' | '<=' | '>=') additive)*
+relational ::= additive (('<' | '>' | '<=' | '>=') additive)*
 additive ::= term (('+' | '-') term)*
 term ::= unary (('*' | '/' | '%') unary)*
 

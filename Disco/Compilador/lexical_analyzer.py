@@ -39,10 +39,6 @@ class LexicalAnalyzer:
 
         # -- Declaración de funciones --
         'func'      : 'FUNC',
-
-        # -- Manejo de memoria / pila --
-        'push'      : 'PUSH',
-        'pop'       : 'POP',
     }
 
     tokens = [
