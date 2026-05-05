@@ -271,3 +271,10 @@ class Postfix_node(Node):
     
     def __str__(self):
         return f"Postfix: {self.primary} {self.postfix_tail}"
+
+class Number_node(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return f"Number: {self.value}"

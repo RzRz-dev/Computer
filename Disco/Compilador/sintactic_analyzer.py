@@ -430,11 +430,23 @@ def p_primary(p):
 
 def p_literal(p):
     '''literal : INT_LITERAL
-               | FLOAT_LITERAL
-               | CHAR_LITERAL
-               | STRING_LITERAL
-               | TRUE
+               | FLOAT_LITERAL'''
+    p[0] = ast.Number_node(p[1])
+
+
+def p_literal_bool(p):
+    '''literal : TRUE
                | FALSE'''
+    p[0] = ast.Number_node(1 if p[1] == 'true' else 0)
+
+
+def p_literal_char(p):
+    'literal : CHAR_LITERAL'
+    p[0] = ast.Number_node(ord(p[1]))
+
+
+def p_literal_string(p):
+    'literal : STRING_LITERAL'
     p[0] = p[1]
 
 
