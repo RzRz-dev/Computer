@@ -1,3 +1,4 @@
+from ast_nodes import *
 
 class CodeGenerator:
 
@@ -10,6 +11,7 @@ class CodeGenerator:
 
     def __init__(self):
         self.code = []
+        self.data = []
         self.symbol_table = {}
         self.register_counter = 1  # R0 reservado (SP)
         self.label_counter = 0
@@ -66,15 +68,33 @@ class CodeGenerator:
             "address": len(self.symbol_table)
         }
 
+        if node.Var_suffix_node:
+            if isinstance(node.Var_suffix_node, Array_suffix_node):
+                self.symbol_table[node.ID]["size"] = node.Var_suffix_node.size
+                self.emit_label(node.ID)
+                self.emit(".SIZE", node.Var_suffix_node.size)
+            elif isinstance(node.Var_suffix_node, Matriz_suffix_node):
+                self.symbol_table[node.ID]["size"] = node.Var_suffix_node.size1 * node.Var_suffix_node.size2
+                self.emit_label(node.ID)
+                self.emit(".SIZE", node.Var_suffix_node.size1 * node.Var_suffix_node.size2)
+        else:
+            self.emit_label(node.ID)
+            self.emit(".SIZE",1)
         if node.init:
             reg = node.init.accept(self)
             self.emit("STORE", f"R{reg}", node.ID)
             self.free_register()
 
     def visit_Lvalue_node(self, node):
+        info = self.symbol_table[node.ID]
+
+        # 🔹 Caso 1: parámetro ya cargado en registro
+        if info.get("type") == "param" and "reg" in info:
+            return info["reg"]
+
+        # 🔹 Caso 2: variable normal en memoria
         reg = self.allocate_register()
-        addr = self.symbol_table[node.ID]["address"]
-        self.emit("LOAD", f"R{reg}", addr)
+        self.emit("LOAD", f"R{reg}", node.ID)
         return reg
 
     def visit_Assign_node(self, node):
@@ -197,13 +217,17 @@ class CodeGenerator:
 
         # Registrar parámetros en la tabla de símbolos
         if node.params:
-            for param in node.params:
-                self.symbol_table[param.ID] = {"address": len(self.symbol_table)}
+            for param in reversed(node.params):
+                reg = self.allocate_register()
+                self.emit("POP", f"R{reg}")
+                self.symbol_table[param.ID] = {
+                    "type": "param",
+                    "reg": reg
+                }
 
         for stmt in node.Block_node:
             stmt.accept(self)
 
-        self.emit("RET")
 
     def visit_Call_node(self, node):
         for arg in node.args:

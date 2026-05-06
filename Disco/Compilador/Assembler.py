@@ -14,7 +14,8 @@ tokens = (
     'REGISTER',
     'NUMBER',
     'COMMA',
-    'ETIQUETA'
+    'ETIQUETA',
+    'SIZE'
 )
 
 t_COMMA = r','
@@ -24,6 +25,10 @@ t_COMMA = r','
 # ========================
 def t_INSTR(t):
     r'LOADV|LOAD|STORE|PUSH|POP|LEA|ADDF|ADD|SUBF|SUB|MULF|MUL|DIVF|DIV|MODF|MOD|CPY|INC|DEC|CMPF|CMP|I2F|F2I|TEST|AND|OR|XOR|NOT|NAND|NOR|SHL|SHR|ROL|ROR|JMP|JZ|JNZ|JP|JN|JC|JNC|JO|JNO|CALL|RET|CLI|STI|NOP|IN|OUT'
+    return t
+
+def t_SIZE(t):
+    r'\.SIZE'
     return t
 
 # ========================
@@ -131,6 +136,11 @@ opcodes = {
 }
 
 
+def reserve_size(n, outputs: list):
+    for size in range(n):
+        outputs.append(format(0, '064b'))
+
+
 def to_unsigned_64(value):
     return value & ((1 << 64) - 1)
 
@@ -227,6 +237,8 @@ def _assemble_line(line):
         if tokens_list[1].type == 'ETIQUETA':
             etiqueta = '(' + str(etiquetas[tokens_list[1].value]) + ')'
             outputs.append(format(opcodes[instr], '012b') + etiqueta)
+        if tokens_list[0].type == 'SIZE':
+            reserve_size(int(tokens_list[1].value),outputs)
 
     if len(tokens_list) == 4:
         instr = tokens_list[0].value

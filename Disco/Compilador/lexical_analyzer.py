@@ -260,7 +260,7 @@ if __name__ == "__main__":
     struct Punto {
         int x;
         int y;
-    }
+    };
     
     func int suma(int a, int b) {
         return a + b;
@@ -295,10 +295,6 @@ if __name__ == "__main__":
         for (int j = 0; j < 3; j += 1) {
             mat[j][0] = j;
         }
-    
-        // Manejo de pila
-        push(resultado);
-        int valor = pop();
     }
     """
 
