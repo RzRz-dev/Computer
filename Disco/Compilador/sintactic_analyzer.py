@@ -87,8 +87,10 @@ def p_array_opt(p):
 
 def p_struct_decl(p):
     'struct_decl : STRUCT ID LBRACE field_list RBRACE SEMICOLON'
-    p[0] = ast.Struct_node(p[2], p[4])
     symbol_table[p[2]]["type"] = p[1]
+    symbol_table[p[2]]["field_list"] = [field.ID for field in p[4]]
+    p[0] = ast.Struct_node(p[2], p[4])
+    
 
 def p_field_list_multi(p):
     'field_list : field_list field_decl'
@@ -101,7 +103,10 @@ def p_field_list_single(p):
 def p_field_decl(p):
     'field_decl : type ID array_size_opt SEMICOLON'
     symbol_table[p[2]]["type"] = p[1]
-    symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
+    if isinstance(p[1], ast.Matriz_suffix_node):
+        symbol_table[p[2]]["array_size"] = p[3].size1 * p[3].size2 if p[3] else None
+    else:
+        symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
 
     p[0] = ast.Field_node(p[1], p[2], p[3])
 
@@ -151,7 +156,10 @@ def p_var_decl(p):
         symbol_table[p[2]]["type"] = p[1].ID
     else:
         symbol_table[p[2]]["type"] = p[1]
-        symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
+        if isinstance(p[3], ast.Matriz_suffix_node):
+            symbol_table[p[2]]["array_size"] = p[3].size1 * p[3].size2 if p[3] else None
+        else:
+            symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
     
     p[0] = ast.Var_node(p[1], p[2], p[3], p[4])
 
@@ -520,9 +528,8 @@ def parse(code: str):
         return None
     
     # Parsea el código
-
     ast = parser.parse(code, lexer=lexer)
-    return ast
+    return ast, symbol_table
 
 if __name__ == "__main__":
     # Código de prueba

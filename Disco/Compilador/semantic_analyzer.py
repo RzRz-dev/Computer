@@ -12,6 +12,7 @@ class SemanticAnalyzer:
         self.global_scope = {}  # Variables/funciones globales
         self.current_scope = self.global_scope
         self.scope_stack = [self.global_scope]  # Stack de scopes
+        self.symbol_table = {}  # Tabla de símbolos global
         self.errors = []
         self.functions = {}
         self.structs = {}
@@ -42,11 +43,12 @@ class SemanticAnalyzer:
                 return scope[name]
         return None
     
-    def analyze(self, ast_root):
+    def analyze(self, ast_root, symbol_table):
         """Comienza el análisis semántico del AST"""
         if not ast_root:
             return False
-            
+        self.symbol_table = symbol_table
+        
         # Vacía los errores
         self.errors = []
         

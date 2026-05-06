@@ -44,9 +44,9 @@ class CodeGenerator:
     def emit_label(self, label):
         self.code.append(f"{label}:")
 
-    def generate(self, ast_root):
+    def generate(self, ast_root, symbol_table):
         self.code = []
-        self.symbol_table = {}
+        self.symbol_table = symbol_table
         self.register_counter = 1
         self.label_counter = 0
 
@@ -63,21 +63,24 @@ class CodeGenerator:
     # ========================
 
     def visit_Var_node(self, node):
-        
-        self.symbol_table[node.ID] = {
-            "address": len(self.symbol_table)
-        }
+
+        info = self.symbol_table[node.ID]
 
         if node.Var_suffix_node:
             if isinstance(node.Var_suffix_node, Array_suffix_node):
-                self.symbol_table[node.ID]["size"] = node.Var_suffix_node.size
                 self.emit_label(node.ID)
-                self.emit(".SIZE", node.Var_suffix_node.size)
+                self.emit(".SIZE", self.symbol_table[node.ID].get("array_size"))
             elif isinstance(node.Var_suffix_node, Matriz_suffix_node):
-                self.symbol_table[node.ID]["size"] = node.Var_suffix_node.size1 * node.Var_suffix_node.size2
                 self.emit_label(node.ID)
-                self.emit(".SIZE", node.Var_suffix_node.size1 * node.Var_suffix_node.size2)
+                self.emit(".SIZE", self.symbol_table[node.ID].get("array_size"))
+        elif (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
+            
+
+            for field in self.symbol_table[info["type"]]["field_list"]:
+                self.emit_label(f"{node.ID}_{field}")
+                self.emit(".SIZE", self.symbol_table[field]["array_size"] if self.symbol_table[field].get("array_size") else 1)
         else:
+            
             self.emit_label(node.ID)
             self.emit(".SIZE",1)
         if node.init:
@@ -89,7 +92,7 @@ class CodeGenerator:
         info = self.symbol_table[node.ID]
 
         # 🔹 Caso 1: parámetro ya cargado en registro
-        if info.get("type") == "param" and "reg" in info:
+        if info.get("param") == True and "reg" in info:
             return info["reg"]
 
         # 🔹 Caso 2: variable normal en memoria
@@ -99,7 +102,7 @@ class CodeGenerator:
 
     def visit_Assign_node(self, node):
         reg = node.expr_node.accept(self)
-        
+
         self.emit("STORE", f"R{reg}", node.Lvalue_node.ID)
         self.free_register()
 
@@ -220,10 +223,9 @@ class CodeGenerator:
             for param in reversed(node.params):
                 reg = self.allocate_register()
                 self.emit("POP", f"R{reg}")
-                self.symbol_table[param.ID] = {
-                    "type": "param",
-                    "reg": reg
-                }
+                self.symbol_table[param.ID]["param"] = True
+                self.symbol_table[param.ID]["reg"] = reg
+
 
         for stmt in node.Block_node:
             stmt.accept(self)

@@ -17,6 +17,7 @@ class Compiler:
         self.source_code = None
         self.tokens = None
         self.ast = None
+        self.symbol_table = {}
         self.semantic_ok = False
         self.ir_code = None
         self.binary_code = None
@@ -88,12 +89,13 @@ class Compiler:
     
     def _syntactic_analysis(self) -> bool:
         """Realiza análisis sintáctico"""
-        self.ast = parse(self.source_code)
         
+        self.ast, self.symbol_table = parse(self.source_code)
+
         if self.ast is None:
             print("Error: No se pudo generar el AST")
             return False
-        
+        print(self.symbol_table)
         print("✓ Árbol sintáctico generado exitosamente")
         return True
     
@@ -101,7 +103,8 @@ class Compiler:
         """Realiza análisis semántico"""
         semantic_analyzer = SemanticAnalyzer()
         
-        self.semantic_ok = semantic_analyzer.analyze(self.ast)
+        self.semantic_ok = semantic_analyzer.analyze(self.ast, self.symbol_table)
+        
         
         if semantic_analyzer.errors:
             print("Errores semánticos encontrados:")
@@ -124,8 +127,8 @@ class Compiler:
         code_gen = CodeGenerator()
         
         try:
-            self.ir_code = code_gen.generate(self.ast)
-            
+            self.ir_code = code_gen.generate(self.ast, self.symbol_table)
+            print(self.symbol_table)
             print("✓ Código intermedio generado:")
             print("-" * 60)
             for i, line in enumerate(self.ir_code.split('\n'), 1):
