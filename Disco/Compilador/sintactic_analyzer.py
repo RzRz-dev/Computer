@@ -53,6 +53,8 @@ def p_declaration(p):
 
 def p_func_decl(p):
     'func_decl : FUNC type ID LPAREN param_list_opt RPAREN block'
+    symbol_table[p[3]]["type"] = f"func_{p[2]}"
+    symbol_table[p[3]]["scope"] = "global"
     p[0] = ast.Func_node(p[2], p[3], p[5], p[7])
 
 def p_param_list_opt(p):
@@ -70,6 +72,8 @@ def p_param_list_single(p):
 
 def p_param(p):
     'param : type ID array_opt'
+    symbol_table[p[2]]["type"] = p[1]
+    symbol_table[p[2]]["param"] = True
     p[0] = ast.Param_node(p[1], p[2], p[3])
 
 def p_array_opt(p):
@@ -84,6 +88,7 @@ def p_array_opt(p):
 def p_struct_decl(p):
     'struct_decl : STRUCT ID LBRACE field_list RBRACE SEMICOLON'
     p[0] = ast.Struct_node(p[2], p[4])
+    symbol_table[p[2]]["type"] = p[1]
 
 def p_field_list_multi(p):
     'field_list : field_list field_decl'
@@ -95,6 +100,9 @@ def p_field_list_single(p):
 
 def p_field_decl(p):
     'field_decl : type ID array_size_opt SEMICOLON'
+    symbol_table[p[2]]["type"] = p[1]
+    symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
+
     p[0] = ast.Field_node(p[1], p[2], p[3])
 
 def p_array_size_opt(p):
@@ -122,6 +130,9 @@ def p_type_primitive(p):
 
 def p_type_struct(p):
     'type : STRUCT ID'
+    
+    symbol_table[p[2]]["type"] = p[1]
+    
     p[0] = ast.Struct_node(p[2])
 
 def p_type_id(p):
@@ -134,6 +145,14 @@ def p_type_id(p):
 
 def p_var_decl(p):
     'var_decl : type ID var_suffix_opt init_opt SEMICOLON'
+    
+    
+    if isinstance(p[1], ast.Struct_node):
+        symbol_table[p[2]]["type"] = p[1].ID
+    else:
+        symbol_table[p[2]]["type"] = p[1]
+        symbol_table[p[2]]["array_size"] = p[3].size if p[3] else None
+    
     p[0] = ast.Var_node(p[1], p[2], p[3], p[4])
 
 def p_var_suffix_opt(p):
@@ -313,6 +332,7 @@ def p_assign_stmt_inline(p):
 
 def p_var_decl_inline(p):
     'var_decl_inline : type ID init_opt'
+    symbol_table[p[2]]["type"] = p[1]
     p[0] = ast.Var_decl_node(p[1], p[2], p[3])
 
 def p_do_while_stmt(p):
@@ -500,6 +520,7 @@ def parse(code: str):
         return None
     
     # Parsea el código
+
     ast = parser.parse(code, lexer=lexer)
     return ast
 

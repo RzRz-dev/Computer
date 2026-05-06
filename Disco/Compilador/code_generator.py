@@ -99,7 +99,7 @@ class CodeGenerator:
 
     def visit_Assign_node(self, node):
         reg = node.expr_node.accept(self)
-        # addr = self.symbol_table[node.Lvalue_node.ID]["address"]
+        
         self.emit("STORE", f"R{reg}", node.Lvalue_node.ID)
         self.free_register()
 

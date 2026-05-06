@@ -172,6 +172,9 @@ class LexicalAnalyzer:
                 self.symbol_table[t.value] = {
                     "name": t.value,
                     "type": None,
+                    "scope": None,
+                    "param": False,
+                    "array_size": None,
                 }
 
         return t
