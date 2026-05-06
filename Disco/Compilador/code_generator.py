@@ -61,14 +61,14 @@ class CodeGenerator:
     # ========================
 
     def visit_Var_node(self, node):
+        
         self.symbol_table[node.ID] = {
             "address": len(self.symbol_table)
         }
 
         if node.init:
             reg = node.init.accept(self)
-            addr = self.symbol_table[node.ID]["address"]
-            self.emit("STORE", f"R{reg}", addr)
+            self.emit("STORE", f"R{reg}", node.ID)
             self.free_register()
 
     def visit_Lvalue_node(self, node):
@@ -79,8 +79,8 @@ class CodeGenerator:
 
     def visit_Assign_node(self, node):
         reg = node.expr_node.accept(self)
-        addr = self.symbol_table[node.Lvalue_node.ID]["address"]
-        self.emit("STORE", f"R{reg}", addr)
+        # addr = self.symbol_table[node.Lvalue_node.ID]["address"]
+        self.emit("STORE", f"R{reg}", node.Lvalue_node.ID)
         self.free_register()
 
     # ========================
