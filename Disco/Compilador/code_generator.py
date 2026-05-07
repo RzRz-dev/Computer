@@ -1,6 +1,40 @@
 from ast_nodes import *
 
 class CodeGenerator:
+    def visit_And_node(self, node):
+        # Cortocircuito: si el primero es falso, no evalúa el segundo
+        end_label = self.generate_label()
+        r1 = node.left_expr.accept(self)
+        self.emit("JZ", end_label)
+        r2 = node.right_expr.accept(self)
+        self.emit("AND", f"R{r1}", f"R{r2}")
+        self.emit_label(end_label)
+        self.free_register()
+        return r1
+
+    def visit_Or_node(self, node):
+        # Cortocircuito: si el primero es verdadero, no evalúa el segundo
+        end_label = self.generate_label()
+        r1 = node.left_expr.accept(self)
+        self.emit("JNZ", end_label)
+        r2 = node.right_expr.accept(self)
+        self.emit("OR", f"R{r1}", f"R{r2}")
+        self.emit_label(end_label)
+        self.free_register()
+        return r1
+
+    def visit_Unary_node(self, node):
+        # Solo se implementa NOT y cambio de signo
+        if node.op == '!':
+            r = node.expr.accept(self)
+            self.emit("NOT", f"R{r}")
+            return r
+        elif node.op == '-':
+            r = node.expr.accept(self)
+            self.emit("NEG", f"R{r}")
+            return r
+        else:
+            raise Exception(f"Operador unario no soportado: {node.op}")
 
     def visit_Struct_node(self, node):
         # No se genera código para definiciones de estructuras
@@ -44,6 +78,38 @@ class CodeGenerator:
     def emit_label(self, label):
         self.code.append(f"{label}:")
 
+    def get_expression_type(self, node):
+        """Determina el tipo de una expresión"""
+        if isinstance(node, Number_node):
+            # Si es un número con punto decimal, es float
+            if isinstance(node.value, float) or '.' in str(node.value):
+                return "float"
+            return "int"
+        elif isinstance(node, Lvalue_node):
+            # Buscar en la tabla de símbolos
+            if node.ID in self.symbol_table:
+                return self.symbol_table[node.ID].get("type", "int")
+            return "int"
+        elif isinstance(node, Var_node):
+            # Buscar en la tabla de símbolos
+            if node.ID in self.symbol_table:
+                return self.symbol_table[node.ID].get("type", "int")
+            return "int"
+        elif isinstance(node, (Additive_node, Term_node, Relational_node, Equality_node)):
+            # Para operaciones binarias, si cualquiera de los operandos es float, el resultado es float
+            left_type = self.get_expression_type(node.left_expr)
+            right_type = self.get_expression_type(node.right_expr)
+            if left_type == "float" or right_type == "float":
+                return "float"
+            return "int"
+        elif isinstance(node, Call_node):
+            # Buscar el tipo de retorno de la función
+            if node.ID in self.symbol_table:
+                return self.symbol_table[node.ID].get("type", "int")
+            return "int"
+        else:
+            return "int"
+
     def generate(self, ast_root, symbol_table):
         self.code = []
         self.symbol_table = symbol_table
@@ -85,6 +151,20 @@ class CodeGenerator:
             self.emit(".SIZE",1)
         if node.init:
             reg = node.init.accept(self)
+            self.emit("STORE", f"R{reg}", node.ID)
+            self.free_register()
+
+    def visit_Var_decl_node(self, node):
+        """Visita una declaración de variable inline (usada en for)"""
+        info = self.symbol_table[node.ID]
+        
+        # Reservar espacio para la variable
+        self.emit_label(node.ID)
+        self.emit(".SIZE", 1)
+        
+        # Si hay inicialización, generar código para asignarla
+        if node.init_opt:
+            reg = node.init_opt.accept(self)
             self.emit("STORE", f"R{reg}", node.ID)
             self.free_register()
 
@@ -137,10 +217,19 @@ class CodeGenerator:
         r1 = node.left_expr.accept(self)
         r2 = node.right_expr.accept(self)
 
+        # Determinar si es operación con flotantes
+        expr_type = self.get_expression_type(node)
+        
         if node.symbol == '+':
-            self.emit("ADD", f"R{r1}", f"R{r2}")
-        else:
-            self.emit("SUB", f"R{r1}", f"R{r2}")
+            if expr_type == "float":
+                self.emit("ADDF", f"R{r1}", f"R{r2}")
+            else:
+                self.emit("ADD", f"R{r1}", f"R{r2}")
+        else:  # '-'
+            if expr_type == "float":
+                self.emit("SUBF", f"R{r1}", f"R{r2}")
+            else:
+                self.emit("SUB", f"R{r1}", f"R{r2}")
 
         self.free_register()
         return r1
@@ -149,12 +238,24 @@ class CodeGenerator:
         r1 = node.left_expr.accept(self)
         r2 = node.right_expr.accept(self)
 
+        # Determinar si es operación con flotantes
+        expr_type = self.get_expression_type(node)
+
         if node.symbol == '*':
-            self.emit("MUL", f"R{r1}", f"R{r2}")
+            if expr_type == "float":
+                self.emit("MULF", f"R{r1}", f"R{r2}")
+            else:
+                self.emit("MUL", f"R{r1}", f"R{r2}")
         elif node.symbol == '/':
-            self.emit("DIV", f"R{r1}", f"R{r2}")
-        else:
-            self.emit("MOD", f"R{r1}", f"R{r2}")
+            if expr_type == "float":
+                self.emit("DIVF", f"R{r1}", f"R{r2}")
+            else:
+                self.emit("DIV", f"R{r1}", f"R{r2}")
+        else:  # '%'
+            if expr_type == "float":
+                self.emit("MODF", f"R{r1}", f"R{r2}")
+            else:
+                self.emit("MOD", f"R{r1}", f"R{r2}")
 
         self.free_register()
         return r1
@@ -163,7 +264,14 @@ class CodeGenerator:
         r1 = node.left_expr.accept(self)
         r2 = node.right_expr.accept(self)
 
-        self.emit("CMP", f"R{r1}", f"R{r2}")
+        # Determinar si es operación con flotantes
+        expr_type = self.get_expression_type(node)
+        
+        if expr_type == "float":
+            self.emit("CMPF", f"R{r1}", f"R{r2}")
+        else:
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+        
         self.free_register()
         return r1
 
@@ -171,7 +279,14 @@ class CodeGenerator:
         r1 = node.left_expr.accept(self)
         r2 = node.right_expr.accept(self)
 
-        self.emit("CMP", f"R{r1}", f"R{r2}")
+        # Determinar si es operación con flotantes
+        expr_type = self.get_expression_type(node)
+        
+        if expr_type == "float":
+            self.emit("CMPF", f"R{r1}", f"R{r2}")
+        else:
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+        
         self.free_register()
         return r1
 
@@ -350,6 +465,134 @@ class CodeGenerator:
 
         self.loop_stack.pop()
 
+
+    def visit_For_node(self, node):
+        # Inicialización del for
+        if node.init:
+            node.init.accept(self)
+        
+        start = self.generate_label()
+        update = self.generate_label()
+        end = self.generate_label()
+
+        self.loop_stack.append((update, end))
+
+        # Etiqueta de inicio del bucle
+        self.emit_label(start)
+
+        # Evaluación de la condición
+        cond = node.condition
+        salto_emitido = False
+        if cond:  # Si hay condición (else se ejecuta siempre)
+            if isinstance(cond, Relational_node):
+                r1 = cond.left_expr.accept(self)
+                r2 = cond.right_expr.accept(self)
+                self.emit("CMP", f"R{r1}", f"R{r2}")
+                self.free_register()
+                if cond.symbol == '<':
+                    self.emit("JZ", end)
+                    self.emit("JP", end)
+                    salto_emitido = True
+                elif cond.symbol == '>':
+                    self.emit("JZ", end)
+                    self.emit("JN", end)
+                    salto_emitido = True
+                elif cond.symbol == '<=':
+                    self.emit("JP", end)
+                    salto_emitido = True
+                elif cond.symbol == '>=':
+                    self.emit("JN", end)
+                    salto_emitido = True
+            elif isinstance(cond, Equality_node):
+                r1 = cond.left_expr.accept(self)
+                r2 = cond.right_expr.accept(self)
+                self.emit("CMP", f"R{r1}", f"R{r2}")
+                self.free_register()
+                if cond.symbol == '==':
+                    self.emit("JNZ", end)
+                    salto_emitido = True
+                elif cond.symbol == '!=':
+                    self.emit("JZ", end)
+                    salto_emitido = True
+            if not salto_emitido:
+                cond_reg = cond.accept(self)
+                self.emit("JZ", end)
+
+        # Cuerpo del bucle
+        for stmt in node.block:
+            stmt.accept(self)
+
+        # Etiqueta de actualización (para continue)
+        self.emit_label(update)
+
+        # Ejecución de la actualización
+        if node.update:
+            if isinstance(node.update, list):
+                for update_stmt in node.update:
+                    update_stmt.accept(self)
+            else:
+                node.update.accept(self)
+
+        # Salto de vuelta al inicio
+        self.emit("JMP", start)
+        self.emit_label(end)
+
+        self.loop_stack.pop()
+
+    def visit_Do_while_node(self, node):
+        start = self.generate_label()
+        condition_label = self.generate_label()
+        end = self.generate_label()
+
+        # Para continue en do-while, saltamos a la evaluación de la condición
+        self.loop_stack.append((condition_label, end))
+
+        # Etiqueta de inicio del bucle
+        self.emit_label(start)
+
+        # Cuerpo del bucle
+        for stmt in node.block:
+            stmt.accept(self)
+
+        # Etiqueta para continue (evaluar la condición)
+        self.emit_label(condition_label)
+
+        # Evaluación de la condición
+        cond = node.condition
+        if isinstance(cond, Relational_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            # Si la condición es verdadera, volvemos al inicio
+            if cond.symbol == '<':
+                self.emit("JN", start)  # Si negativo (verdadera)
+            elif cond.symbol == '>':
+                self.emit("JP", start)  # Si positivo (verdadera)
+            elif cond.symbol == '<=':
+                # Si A <= B: salta a start si NO positivo
+                self.emit("JP", end)     # Si positivo, va a end
+                self.emit("JMP", start)  # Si no positivo, vuelve a start
+            elif cond.symbol == '>=':
+                # Si A >= B: salta a start si NO negativo
+                self.emit("JN", end)     # Si negativo, va a end
+                self.emit("JMP", start)  # Si no negativo, vuelve a start
+        elif isinstance(cond, Equality_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '==':
+                self.emit("JZ", start)   # Si igual, vuelve
+            elif cond.symbol == '!=':
+                self.emit("JNZ", start)  # Si no igual, vuelve
+        else:
+            # Condición booleana normal
+            cond_reg = cond.accept(self)
+            self.emit("JNZ", start)
+
+        self.emit_label(end)
+        self.loop_stack.pop()
 
     def visit_Break_node(self, node):
         _, end = self.loop_stack[-1]
