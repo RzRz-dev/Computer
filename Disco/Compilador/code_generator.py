@@ -102,8 +102,18 @@ class CodeGenerator:
 
     def visit_Assign_node(self, node):
         reg = node.expr_node.accept(self)
+        info = self.symbol_table[node.Lvalue_node.ID]
 
-        self.emit("STORE", f"R{reg}", node.Lvalue_node.ID)
+        # Si el Lvalue es un campo de una estructura, usar el nombre calificado
+        if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
+            print(f"Asignando a campo de estructura: {node.Lvalue_node.lvalue_tail}")
+            print(f"Información del tipo: {node.Lvalue_node.ID}_{node.Lvalue_node.lvalue_tail[0][1]}")
+
+            field_name = f"{node.Lvalue_node.ID}_{node.Lvalue_node.lvalue_tail[0][1]}"
+            self.emit("STORE", f"R{reg}", field_name)
+        else:
+            lvalue = node.Lvalue_node
+            self.emit("STORE", f"R{reg}", lvalue.ID)
         self.free_register()
 
     # ========================
