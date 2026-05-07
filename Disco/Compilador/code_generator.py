@@ -165,25 +165,122 @@ class CodeGenerator:
     # CONTROL DE FLUJO
     # ========================
 
-    def visit_If_node(self, node):
-        else_label = self.generate_label()
-        end_label = self.generate_label()
 
-        cond_reg = node.condition.accept(self)
-        self.emit("JZ", else_label)
+    def visit_If_node(self, node):
+        end_label = self.generate_label()
+        next_label = self.generate_label()  # Para elif o else
+
+        cond = node.condition
+        salto_emitido = False
+        # Soporte para condiciones relacionales y de igualdad
+        if isinstance(cond, Relational_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '<':
+                self.emit("JZ", next_label)
+                self.emit("JP", next_label)
+                salto_emitido = True
+            elif cond.symbol == '>':
+                self.emit("JZ", next_label)
+                self.emit("JN", next_label)
+                salto_emitido = True
+            elif cond.symbol == '<=':
+                self.emit("JP", next_label)
+                salto_emitido = True
+            elif cond.symbol == '>=':
+                self.emit("JN", next_label)
+                salto_emitido = True
+        elif isinstance(cond, Equality_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '==':
+                self.emit("JNZ", next_label)
+                salto_emitido = True
+            elif cond.symbol == '!=':
+                self.emit("JZ", next_label)
+                salto_emitido = True
+        if not salto_emitido:
+            cond_reg = cond.accept(self)
+            self.emit("JZ", next_label)
 
         for stmt in node.block:
             stmt.accept(self)
 
         self.emit("JMP", end_label)
+        self.emit_label(next_label)
 
-        self.emit_label(else_label)
-
-        if node.elif_opt:
+        if isinstance(node.elif_opt, Elif_node):
+            node.elif_opt.end_label = end_label  # Pasar etiqueta de fin
+            node.elif_opt.accept(self)
+        elif isinstance(node.elif_opt, Else_node):
+            node.elif_opt.end_label = end_label
             node.elif_opt.accept(self)
 
         self.emit_label(end_label)
 
+    def visit_Elif_node(self, node):
+        # end_label es pasado desde el if o elif anterior y guardado en el nodo
+        next_label = self.generate_label()
+        cond = node.condition
+        salto_emitido = False
+        if isinstance(cond, Relational_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '<':
+                self.emit("JZ", next_label)
+                self.emit("JP", next_label)
+                salto_emitido = True
+            elif cond.symbol == '>':
+                self.emit("JZ", next_label)
+                self.emit("JN", next_label)
+                salto_emitido = True
+            elif cond.symbol == '<=':
+                self.emit("JP", next_label)
+                salto_emitido = True
+            elif cond.symbol == '>=':
+                self.emit("JN", next_label)
+                salto_emitido = True
+        elif isinstance(cond, Equality_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '==':
+                self.emit("JNZ", next_label)
+                salto_emitido = True
+            elif cond.symbol == '!=':
+                self.emit("JZ", next_label)
+                salto_emitido = True
+        if not salto_emitido:
+            cond_reg = cond.accept(self)
+            self.emit("JZ", next_label)
+
+        for stmt in node.block:
+            stmt.accept(self)
+
+        self.emit("JMP", node.end_label)
+        self.emit_label(next_label)
+
+        if isinstance(node.elif_opt, Elif_node):
+            node.elif_opt.end_label = node.end_label  # Pasar etiqueta de fin
+            node.elif_opt.accept(self)
+        elif isinstance(node.elif_opt, Else_node):
+            node.elif_opt.end_label = node.end_label
+            node.elif_opt.accept(self)
+
+
+    def visit_Else_node(self, node):
+        # end_label es pasado desde el if o elif anterior y guardado en el nodo
+        for stmt in node.block:
+            stmt.accept(self)
+        self.emit("JMP", node.end_label)
+    
     def visit_While_node(self, node):
         start = self.generate_label()
         end = self.generate_label()
@@ -192,8 +289,44 @@ class CodeGenerator:
 
         self.emit_label(start)
 
-        cond_reg = node.condition.accept(self)
-        self.emit("JZ", end)
+        # Soporte para condiciones relacionales
+        cond = node.condition
+        salto_emitido = False
+        if isinstance(cond, Relational_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            # Saltos según el símbolo
+            if cond.symbol == '<':
+                self.emit("JZ", end)  
+                self.emit("JP", end)  
+                salto_emitido = True
+            elif cond.symbol == '>':
+                self.emit("JZ", end)    
+                self.emit("JN", end)   
+                salto_emitido = True
+            elif cond.symbol == '<=':
+                self.emit("JP", end)    
+                salto_emitido = True
+            elif cond.symbol == '>=':
+                self.emit("JN", end)  
+                salto_emitido = True
+        elif isinstance(cond, Equality_node):
+            r1 = cond.left_expr.accept(self)
+            r2 = cond.right_expr.accept(self)
+            self.emit("CMP", f"R{r1}", f"R{r2}")
+            self.free_register()
+            if cond.symbol == '==':
+                self.emit("JNZ", end)   
+                salto_emitido = True
+            elif cond.symbol == '!=':
+                self.emit("JZ", end)    
+                salto_emitido = True
+        if not salto_emitido:
+            # Condición booleana normal
+            cond_reg = cond.accept(self)
+            self.emit("JZ", end)
 
         for stmt in node.block:
             stmt.accept(self)
@@ -202,6 +335,7 @@ class CodeGenerator:
         self.emit_label(end)
 
         self.loop_stack.pop()
+
 
     def visit_Break_node(self, node):
         _, end = self.loop_stack[-1]

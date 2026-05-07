@@ -138,7 +138,7 @@ opcodes = {
 
 def reserve_size(n, outputs: list):
     for size in range(n):
-        outputs.append(format(0, '064b'))
+        outputs.append(format(1, '064b'))
 
 
 def to_unsigned_64(value):
