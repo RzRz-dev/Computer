@@ -1,5 +1,4 @@
 // Algoritmo de Euclides (restas sucesivas)
-
 struct Punto{
     int x;
     int y;
@@ -7,9 +6,7 @@ struct Punto{
 
 func void main() {
     Punto p;
-    int a;
-    int b;
-    
     p.x = 48;
-    p.y = 18;
+    p.y = p.x +5;
+
 }

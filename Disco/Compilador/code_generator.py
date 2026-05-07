@@ -95,6 +95,12 @@ class CodeGenerator:
         if info.get("param") == True and "reg" in info:
             return info["reg"]
 
+        if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
+            field_name = f"{node.ID}_{node.lvalue_tail[0][1]}"
+            reg = self.allocate_register()
+            self.emit("LOAD", f"R{reg}", field_name)
+            return reg
+
         # 🔹 Caso 2: variable normal en memoria
         reg = self.allocate_register()
         self.emit("LOAD", f"R{reg}", node.ID)
@@ -106,8 +112,6 @@ class CodeGenerator:
 
         # Si el Lvalue es un campo de una estructura, usar el nombre calificado
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
-            print(f"Asignando a campo de estructura: {node.Lvalue_node.lvalue_tail}")
-            print(f"Información del tipo: {node.Lvalue_node.ID}_{node.Lvalue_node.lvalue_tail[0][1]}")
 
             field_name = f"{node.Lvalue_node.ID}_{node.Lvalue_node.lvalue_tail[0][1]}"
             self.emit("STORE", f"R{reg}", field_name)
