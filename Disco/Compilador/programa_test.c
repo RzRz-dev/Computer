@@ -1,15 +1,14 @@
 // Iteracion con for y do-while
+INCLUDE "euclides"
+DEFINE EDAD 30
 
 func void main() {
-    int i = 0;
-    int sum = 0;
+    int x;
+    int gcd;
 
-    for (int j = 0; j < 5; j = j + 1) {
-        sum = sum + j;
-    }
+    x = EDAD;
 
-    do {
-        sum = sum + 1;
-        i = i + 1;
-    } while (i < 3);
+    gcd = euclides(x, 12);
+
 }
+

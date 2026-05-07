@@ -8,6 +8,7 @@ from sintactic_analyzer import parse
 from semantic_analyzer import SemanticAnalyzer
 from code_generator import CodeGenerator
 from Assembler import assemble_program
+from Preprocessor import preprocess_program
 import sys
 
 class Compiler:
@@ -30,37 +31,43 @@ class Compiler:
             with open(source_file, 'r', encoding='utf-8') as f:
                 self.source_code = f.read()
             
-            # 2. Análisis Léxico
+            # 2. Preprocesamiento
             print("=" * 60)
-            print("FASE 1: ANÁLISIS LÉXICO")
+            print("FASE 1: PREPROCESAMIENTO")
+            print("=" * 60)
+            self.source_code = preprocess_program(self.source_code)
+            
+            # 3. Análisis Léxico
+            print("=" * 60)
+            print("FASE 2: ANÁLISIS LÉXICO")
             print("=" * 60)
             if not self._lexical_analysis():
                 return False
             
             # 3. Análisis Sintáctico
             print("\n" + "=" * 60)
-            print("FASE 2: ANÁLISIS SINTÁCTICO")
+            print("FASE 3: ANÁLISIS SINTÁCTICO")
             print("=" * 60)
             if not self._syntactic_analysis():
                 return False
             
             # 4. Análisis Semántico
             print("\n" + "=" * 60)
-            print("FASE 3: ANÁLISIS SEMÁNTICO")
+            print("FASE 4: ANÁLISIS SEMÁNTICO")
             print("=" * 60)
             if not self._semantic_analysis():
                 return False
             
             # 5. Generación de Código
             print("\n" + "=" * 60)
-            print("FASE 4: GENERACIÓN DE CÓDIGO")
+            print("FASE 5: GENERACIÓN DE CÓDIGO")
             print("=" * 60)
             if not self._code_generation():
                 return False
             
             # 6. Ensamblaje
             print("\n" + "=" * 60)
-            print("FASE 5: ENSAMBLAJE")
+            print("FASE 6: ENSAMBLAJE")
             print("=" * 60)
             if not self._assembly():
                 return False
@@ -95,7 +102,6 @@ class Compiler:
         if self.ast is None:
             print("Error: No se pudo generar el AST")
             return False
-        print(self.symbol_table)
         print("✓ Árbol sintáctico generado exitosamente")
         return True
     
@@ -128,7 +134,6 @@ class Compiler:
         
         try:
             self.ir_code = code_gen.generate(self.ast, self.symbol_table)
-            print(self.symbol_table)
             print("✓ Código intermedio generado:")
             print("-" * 60)
             for i, line in enumerate(self.ir_code.split('\n'), 1):
