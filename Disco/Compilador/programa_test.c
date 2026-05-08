@@ -1,14 +1,10 @@
-// Iteracion con for y do-while
+// Arreglos y matrices con indices constantes
 INCLUDE "euclides"
-DEFINE EDAD 30
 
 func void main() {
-    int x;
-    int gcd;
-
-    x = EDAD;
-
-    gcd = euclides(x, 12);
-
+    int resultado;
+    int numero_1 = 10;
+    int numero_2 = 2;
+    
+    euclides(numero_1, numero_2);
 }
-

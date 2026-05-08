@@ -1,6 +1,15 @@
 from ast_nodes import *
 
 class CodeGenerator:
+
+    def __init__(self):
+        self.code = []
+        self.data = []
+        self.symbol_table = {}
+        self.register_counter = 1  # R0 reservado (SP)
+        self.label_counter = 0
+        self.loop_stack = []
+
     def visit_And_node(self, node):
         # Cortocircuito: si el primero es falso, no evalúa el segundo
         end_label = self.generate_label()
@@ -42,14 +51,6 @@ class CodeGenerator:
 
     def generic_visit(self, node):
         raise Exception(f"No se implementó visit_{node.__class__.__name__} en CodeGenerator")
-
-    def __init__(self):
-        self.code = []
-        self.data = []
-        self.symbol_table = {}
-        self.register_counter = 1  # R0 reservado (SP)
-        self.label_counter = 0
-        self.loop_stack = []
 
     # ========================
     # UTILIDADES
@@ -112,6 +113,7 @@ class CodeGenerator:
 
     def generate(self, ast_root, symbol_table):
         self.code = []
+        self.emit("JMP", "func_main")
         self.symbol_table = symbol_table
         self.register_counter = 1
         self.label_counter = 0
@@ -197,7 +199,13 @@ class CodeGenerator:
             self.emit("STORE", f"R{reg}", field_name)
         else:
             lvalue = node.Lvalue_node
-            self.emit("STORE", f"R{reg}", lvalue.ID)
+            # 🔹 Si es un parámetro, copiar al registro del parámetro
+            if info.get("param") == True and "reg" in info:
+                param_reg = info["reg"]
+                self.emit("CPY", f"R{param_reg}", f"R{reg}")
+            else:
+                # 🔹 Si es una variable normal, almacenar en memoria
+                self.emit("STORE", f"R{reg}", lvalue.ID)
         self.free_register()
 
     # ========================
@@ -611,16 +619,21 @@ class CodeGenerator:
 
         # Registrar parámetros en la tabla de símbolos
         if node.params:
+            if(node.ID != "main"):
+                self.emit("POP", "R0")  # Guardar SP para funciones no main
+
             for param in reversed(node.params):
                 reg = self.allocate_register()
                 self.emit("POP", f"R{reg}")
                 self.symbol_table[param.ID]["param"] = True
                 self.symbol_table[param.ID]["reg"] = reg
 
+        
 
         for stmt in node.Block_node:
             stmt.accept(self)
 
+        
 
     def visit_Call_node(self, node):
         for arg in node.args:
@@ -636,4 +649,6 @@ class CodeGenerator:
     def visit_Return_node(self, node):
         if node.expr_opt:
             reg = node.expr_opt.accept(self)
+            print(reg)
+        self.emit("PUSH", "R0")  # Restaurar SP para main
         self.emit("RET")
