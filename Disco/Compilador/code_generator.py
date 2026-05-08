@@ -79,6 +79,15 @@ class CodeGenerator:
     def emit_label(self, label):
         self.code.append(f"{label}:")
 
+    def emit_data(self, instr, *args):
+        if args:
+            self.data.append(f"{instr} {', '.join(map(str, args))}")
+        else:
+            self.data.append(instr)
+
+    def emit_data_label(self, label):
+        self.data.append(f"{label}:")
+
     def get_expression_type(self, node):
         """Determina el tipo de una expresión"""
         if isinstance(node, Number_node):
@@ -113,7 +122,9 @@ class CodeGenerator:
 
     def generate(self, ast_root, symbol_table):
         self.code = []
-        self.emit("JMP", "func_main")
+        self.data = []
+        self.code.append(".CODE")
+        self.code.append("")  # Línea en blanco
         self.symbol_table = symbol_table
         self.register_counter = 1
         self.label_counter = 0
@@ -124,7 +135,12 @@ class CodeGenerator:
         else:
             ast_root.accept(self)
 
-        return "\n".join(self.code)
+        # Combinar datos y código
+        if self.data:
+            result = ["JMP func_main"] + [".DATA"] + self.data + [""] + self.code
+        else:
+            result = self.code
+        return "\n".join(result)
 
     # ========================
     # VARIABLES
@@ -136,21 +152,21 @@ class CodeGenerator:
 
         if node.Var_suffix_node:
             if isinstance(node.Var_suffix_node, Array_suffix_node):
-                self.emit_label(node.ID)
-                self.emit(".SIZE", self.symbol_table[node.ID].get("array_size"))
+                self.emit_data_label(node.ID)
+                self.emit_data(".SIZE", self.symbol_table[node.ID].get("array_size"))
             elif isinstance(node.Var_suffix_node, Matriz_suffix_node):
-                self.emit_label(node.ID)
-                self.emit(".SIZE", self.symbol_table[node.ID].get("array_size"))
+                self.emit_data_label(node.ID)
+                self.emit_data(".SIZE", self.symbol_table[node.ID].get("array_size"))
         elif (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
             
 
             for field in self.symbol_table[info["type"]]["field_list"]:
-                self.emit_label(f"{node.ID}_{field}")
-                self.emit(".SIZE", self.symbol_table[field]["array_size"] if self.symbol_table[field].get("array_size") else 1)
+                self.emit_data_label(f"{node.ID}_{field}")
+                self.emit_data(".SIZE", self.symbol_table[field]["array_size"] if self.symbol_table[field].get("array_size") else 1)
         else:
             
-            self.emit_label(node.ID)
-            self.emit(".SIZE",1)
+            self.emit_data_label(node.ID)
+            self.emit_data(".SIZE",1)
         if node.init:
             reg = node.init.accept(self)
             self.emit("STORE", f"R{reg}", node.ID)
@@ -161,8 +177,8 @@ class CodeGenerator:
         info = self.symbol_table[node.ID]
         
         # Reservar espacio para la variable
-        self.emit_label(node.ID)
-        self.emit(".SIZE", 1)
+        self.emit_data_label(node.ID)
+        self.emit_data(".SIZE", 1)
         
         # Si hay inicialización, generar código para asignarla
         if node.init_opt:

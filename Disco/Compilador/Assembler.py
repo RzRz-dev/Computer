@@ -15,7 +15,9 @@ tokens = (
     'NUMBER',
     'COMMA',
     'ETIQUETA',
-    'SIZE'
+    'SIZE',
+    "DATA",
+    "CODE"
 )
 
 t_COMMA = r','
@@ -29,6 +31,14 @@ def t_INSTR(t):
 
 def t_SIZE(t):
     r'\.SIZE'
+    return t
+
+def t_DATA(t):
+    r'\.DATA'
+    return t
+
+def t_CODE(t):
+    r'\.CODE'
     return t
 
 # ========================
@@ -138,7 +148,7 @@ opcodes = {
 
 def reserve_size(n, outputs: list):
     for size in range(n):
-        outputs.append(format(1, '064b'))
+        outputs.append(format(0, '064b'))
 
 
 def to_unsigned_64(value):
