@@ -126,7 +126,7 @@ class Compiler:
             for error in semantic_analyzer.errors:
                 print(f"  {error}")
             self.errors.extend(semantic_analyzer.errors)
-            return self.semantic_ok == False
+            return False
         
         if self.semantic_ok:
             print("✓ Análisis semántico correcto")

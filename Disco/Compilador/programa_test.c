@@ -1,7 +1,17 @@
-// Arreglos y matrices con indices constantes
+// Algoritmo de Euclides (restas sucesivas)
 
 func void main() {
-    int arr[3];
+    int a = 48;
+    int b = 18;
 
-    arr[0] = 1;
+    while (a != b) {
+        if (a > b) {
+            a = a - b;
+        } else {
+            b = b - a;
+        }
+    }
+
+    int gcd = a;
+    
 }

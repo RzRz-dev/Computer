@@ -6,7 +6,7 @@ class CodeGenerator:
         self.code = []
         self.data = []
         self.symbol_table = {}
-        self.register_counter = 1  # R0 reservado (SP)
+        self.allocated_registers = set()  # Registros actualmente en uso
         self.label_counter = 0
         self.loop_stack = []
 
@@ -18,7 +18,7 @@ class CodeGenerator:
         r2 = node.right_expr.accept(self)
         self.emit("AND", f"R{r1}", f"R{r2}")
         self.emit_label(end_label)
-        self.free_register()
+        self.free_register(r2)
         return r1
 
     def visit_Or_node(self, node):
@@ -29,7 +29,7 @@ class CodeGenerator:
         r2 = node.right_expr.accept(self)
         self.emit("OR", f"R{r1}", f"R{r2}")
         self.emit_label(end_label)
-        self.free_register()
+        self.free_register(r2)
         return r1
 
     def visit_Unary_node(self, node):
@@ -57,13 +57,17 @@ class CodeGenerator:
     # ========================
 
     def allocate_register(self):
-        reg = self.register_counter
-        self.register_counter += 1
-        return reg
+        # Buscar el primer registro disponible en el rango R1-R15 (R0 está reservado para SP)
+        for reg in range(1, 16):
+            if reg not in self.allocated_registers:
+                self.allocated_registers.add(reg)
+                return reg
+        raise Exception(f"Error: No hay registros disponibles. Máximo 15 registros (R1-R15). Se agotaron todos los registros.")
 
-    def free_register(self):
-        if self.register_counter > 1:
-            self.register_counter -= 1
+    def free_register(self, reg=None):
+        """Libera un registro específico o el más recientemente asignado"""
+        if reg is not None and reg in self.allocated_registers:
+            self.allocated_registers.remove(reg)
 
     def generate_label(self):
         label = f"L{self.label_counter}"
@@ -123,10 +127,8 @@ class CodeGenerator:
     def generate(self, ast_root, symbol_table):
         self.code = []
         self.data = []
-        self.code.append(".CODE")
-        self.code.append("")  # Línea en blanco
         self.symbol_table = symbol_table
-        self.register_counter = 1
+        self.allocated_registers = set()
         self.label_counter = 0
 
         if isinstance(ast_root, list):
@@ -137,7 +139,7 @@ class CodeGenerator:
 
         # Combinar datos y código
         if self.data:
-            result = ["JMP func_main"] + [".DATA"] + self.data + [""] + self.code
+            result = ["JMP func_main"] + self.data + [""] + self.code
         else:
             result = self.code
         return "\n".join(result)
@@ -170,7 +172,7 @@ class CodeGenerator:
         if node.init:
             reg = node.init.accept(self)
             self.emit("STORE", f"R{reg}", node.ID)
-            self.free_register()
+            self.free_register(reg)
 
     def visit_Var_decl_node(self, node):
         """Visita una declaración de variable inline (usada en for)"""
@@ -184,7 +186,7 @@ class CodeGenerator:
         if node.init_opt:
             reg = node.init_opt.accept(self)
             self.emit("STORE", f"R{reg}", node.ID)
-            self.free_register()
+            self.free_register(reg)
 
     def _calculate_array_address(self, lvalue_node):
         """
@@ -247,15 +249,15 @@ class CodeGenerator:
         if self._is_array_access(lvalue):
             addr_reg = self._calculate_array_address(lvalue)
             self.emit("STOREI", f"R{reg}", f"R{addr_reg}")
-            self.free_register()  # Liberar el valor
-            self.free_register()  # Liberar la dirección
+            self.free_register(reg)  # Liberar el valor
+            self.free_register(addr_reg)  # Liberar la dirección
             return
 
         # Asignación a campo de estructura
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
             field_name = f"{lvalue.ID}_{lvalue.lvalue_tail[0][1]}"
             self.emit("STORE", f"R{reg}", field_name)
-            self.free_register()
+            self.free_register(reg)
             return
 
         # Asignación a variable normal
@@ -267,7 +269,7 @@ class CodeGenerator:
             # Si es una variable normal, almacenar en memoria
             self.emit("STORE", f"R{reg}", lvalue.ID)
         
-        self.free_register()
+        self.free_register(reg)
 
     # ========================
     # LITERALES
@@ -300,7 +302,7 @@ class CodeGenerator:
             else:
                 self.emit("SUB", f"R{r1}", f"R{r2}")
 
-        self.free_register()
+        self.free_register(r2)
         return r1
 
     def visit_Term_node(self, node):
@@ -326,7 +328,7 @@ class CodeGenerator:
             else:
                 self.emit("MOD", f"R{r1}", f"R{r2}")
 
-        self.free_register()
+        self.free_register(r2)
         return r1
 
     def visit_Relational_node(self, node):
@@ -341,7 +343,8 @@ class CodeGenerator:
         else:
             self.emit("CMP", f"R{r1}", f"R{r2}")
         
-        self.free_register()
+        self.free_register(r2)
+        self.free_register(r1)
         return r1
 
     def visit_Equality_node(self, node):
@@ -356,8 +359,8 @@ class CodeGenerator:
         else:
             self.emit("CMP", f"R{r1}", f"R{r2}")
         
-        self.free_register()
-        return r1
+        self.free_register(r2)
+        self.free_register(r1)
 
     # ========================
     # CONTROL DE FLUJO
@@ -375,7 +378,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '<':
                 self.emit("JZ", next_label)
                 self.emit("JP", next_label)
@@ -394,7 +398,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '==':
                 self.emit("JNZ", next_label)
                 salto_emitido = True
@@ -429,7 +434,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '<':
                 self.emit("JZ", next_label)
                 self.emit("JP", next_label)
@@ -448,7 +454,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '==':
                 self.emit("JNZ", next_label)
                 salto_emitido = True
@@ -494,7 +501,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             # Saltos según el símbolo
             if cond.symbol == '<':
                 self.emit("JZ", end)  
@@ -514,7 +522,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '==':
                 self.emit("JNZ", end)   
                 salto_emitido = True
@@ -557,7 +566,8 @@ class CodeGenerator:
                 r1 = cond.left_expr.accept(self)
                 r2 = cond.right_expr.accept(self)
                 self.emit("CMP", f"R{r1}", f"R{r2}")
-                self.free_register()
+                self.free_register(r2)
+                self.free_register(r1)
                 if cond.symbol == '<':
                     self.emit("JZ", end)
                     self.emit("JP", end)
@@ -576,7 +586,8 @@ class CodeGenerator:
                 r1 = cond.left_expr.accept(self)
                 r2 = cond.right_expr.accept(self)
                 self.emit("CMP", f"R{r1}", f"R{r2}")
-                self.free_register()
+                self.free_register(r2)
+                self.free_register(r1)
                 if cond.symbol == '==':
                     self.emit("JNZ", end)
                     salto_emitido = True
@@ -632,7 +643,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             # Si la condición es verdadera, volvemos al inicio
             if cond.symbol == '<':
                 self.emit("JN", start)  # Si negativo (verdadera)
@@ -650,7 +662,8 @@ class CodeGenerator:
             r1 = cond.left_expr.accept(self)
             r2 = cond.right_expr.accept(self)
             self.emit("CMP", f"R{r1}", f"R{r2}")
-            self.free_register()
+            self.free_register(r2)
+            self.free_register(r1)
             if cond.symbol == '==':
                 self.emit("JZ", start)   # Si igual, vuelve
             elif cond.symbol == '!=':
@@ -700,7 +713,7 @@ class CodeGenerator:
         for arg in node.args:
             reg = arg.accept(self)
             self.emit("PUSH", f"R{reg}")
-            self.free_register()
+            self.free_register(reg)
 
         self.emit("CALL", f"func_{node.ID}")
 
