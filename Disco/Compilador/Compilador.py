@@ -33,7 +33,6 @@ class Compiler:
     def get_reloc_code(self):
         return self.binary_code
     
-    
     def compile(self, source_file: str) -> bool:
         """Compila un archivo completo"""
         try:
