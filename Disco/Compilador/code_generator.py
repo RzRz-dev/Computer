@@ -215,25 +215,25 @@ class CodeGenerator:
     def visit_Lvalue_node(self, node):
         info = self.symbol_table[node.ID]
 
-        # 🔹 Caso 1: parámetro ya cargado en registro
+        # El parámetro ya esta cargado en registro
         if info.get("param") == True and "reg" in info:
             return info["reg"]
 
-        # 🔹 Caso 2: acceso a array - retorna el VALOR del elemento
+        # Acceso a array - retorna el VALOR del elemento
         if self._is_array_access(node):
             addr_reg = self._calculate_array_address(node)
             value_reg = self.allocate_register()
             self.emit("LOADI", f"R{value_reg}", f"R{addr_reg}")
             return value_reg  # El llamador debe liberar este registro cuando termine
 
-        # 🔹 Caso 3: acceso a campo de estructura
+        # Acceso a campo de estructura
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
             field_name = f"{node.ID}_{node.lvalue_tail[0][1]}"
             reg = self.allocate_register()
             self.emit("LOAD", f"R{reg}", field_name)
             return reg
 
-        # 🔹 Caso 4: variable normal en memoria - retorna el VALOR
+        # Variable normal en memoria - retorna el VALOR
         reg = self.allocate_register()
         self.emit("LOAD", f"R{reg}", node.ID)
         return reg
@@ -243,7 +243,7 @@ class CodeGenerator:
         info = self.symbol_table[node.Lvalue_node.ID]
         lvalue = node.Lvalue_node
 
-        # 🔹 Caso 1: asignación a un elemento de array
+        # Asignación a un elemento de array
         if self._is_array_access(lvalue):
             addr_reg = self._calculate_array_address(lvalue)
             self.emit("STOREI", f"R{reg}", f"R{addr_reg}")
@@ -251,14 +251,14 @@ class CodeGenerator:
             self.free_register()  # Liberar la dirección
             return
 
-        # 🔹 Caso 2: asignación a campo de estructura
+        # Asignación a campo de estructura
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
             field_name = f"{lvalue.ID}_{lvalue.lvalue_tail[0][1]}"
             self.emit("STORE", f"R{reg}", field_name)
             self.free_register()
             return
 
-        # 🔹 Caso 3: asignación a variable normal
+        # Asignación a variable normal
         # Si es un parámetro, copiar al registro del parámetro
         if info.get("param") == True and "reg" in info:
             param_reg = info["reg"]
