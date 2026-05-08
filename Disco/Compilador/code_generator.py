@@ -186,6 +186,32 @@ class CodeGenerator:
             self.emit("STORE", f"R{reg}", node.ID)
             self.free_register()
 
+    def _calculate_array_address(self, lvalue_node):
+        """
+        Calcula la dirección de un elemento de array.
+        Retorna el registro que contiene la dirección calculada.
+        Nota: Esta función mantiene todos los registros asignados sin liberar.
+        """
+        base_reg = self.allocate_register()
+        self.emit("LEA", f"R{base_reg}", lvalue_node.ID)
+        
+        # Procesar cada índice (para arrays multidimensionales)
+        for index_access in lvalue_node.lvalue_tail:
+            if index_access[0] == '[':
+                # index_access es ['[', expr, ']']
+                index_expr = index_access[1]
+                index_reg = index_expr.accept(self)
+                # Sumar el índice a la dirección base
+                self.emit("ADD", f"R{base_reg}", f"R{index_reg}")
+        
+        return base_reg
+
+    def _is_array_access(self, lvalue_node):
+        """Verifica si un lvalue accede a un array"""
+        if lvalue_node.lvalue_tail and len(lvalue_node.lvalue_tail) > 0:
+            return lvalue_node.lvalue_tail[0][0] == '['
+        return False
+
     def visit_Lvalue_node(self, node):
         info = self.symbol_table[node.ID]
 
@@ -193,13 +219,21 @@ class CodeGenerator:
         if info.get("param") == True and "reg" in info:
             return info["reg"]
 
+        # 🔹 Caso 2: acceso a array - retorna el VALOR del elemento
+        if self._is_array_access(node):
+            addr_reg = self._calculate_array_address(node)
+            value_reg = self.allocate_register()
+            self.emit("LOADI", f"R{value_reg}", f"R{addr_reg}")
+            return value_reg  # El llamador debe liberar este registro cuando termine
+
+        # 🔹 Caso 3: acceso a campo de estructura
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
             field_name = f"{node.ID}_{node.lvalue_tail[0][1]}"
             reg = self.allocate_register()
             self.emit("LOAD", f"R{reg}", field_name)
             return reg
 
-        # 🔹 Caso 2: variable normal en memoria
+        # 🔹 Caso 4: variable normal en memoria - retorna el VALOR
         reg = self.allocate_register()
         self.emit("LOAD", f"R{reg}", node.ID)
         return reg
@@ -207,21 +241,32 @@ class CodeGenerator:
     def visit_Assign_node(self, node):
         reg = node.expr_node.accept(self)
         info = self.symbol_table[node.Lvalue_node.ID]
+        lvalue = node.Lvalue_node
 
-        # Si el Lvalue es un campo de una estructura, usar el nombre calificado
+        # 🔹 Caso 1: asignación a un elemento de array
+        if self._is_array_access(lvalue):
+            addr_reg = self._calculate_array_address(lvalue)
+            self.emit("STOREI", f"R{reg}", f"R{addr_reg}")
+            self.free_register()  # Liberar el valor
+            self.free_register()  # Liberar la dirección
+            return
+
+        # 🔹 Caso 2: asignación a campo de estructura
         if (info["type"] not in ("int", "struct", "float", "void", "string", "char", "bool", "func")):
-
-            field_name = f"{node.Lvalue_node.ID}_{node.Lvalue_node.lvalue_tail[0][1]}"
+            field_name = f"{lvalue.ID}_{lvalue.lvalue_tail[0][1]}"
             self.emit("STORE", f"R{reg}", field_name)
+            self.free_register()
+            return
+
+        # 🔹 Caso 3: asignación a variable normal
+        # Si es un parámetro, copiar al registro del parámetro
+        if info.get("param") == True and "reg" in info:
+            param_reg = info["reg"]
+            self.emit("CPY", f"R{param_reg}", f"R{reg}")
         else:
-            lvalue = node.Lvalue_node
-            # 🔹 Si es un parámetro, copiar al registro del parámetro
-            if info.get("param") == True and "reg" in info:
-                param_reg = info["reg"]
-                self.emit("CPY", f"R{param_reg}", f"R{reg}")
-            else:
-                # 🔹 Si es una variable normal, almacenar en memoria
-                self.emit("STORE", f"R{reg}", lvalue.ID)
+            # Si es una variable normal, almacenar en memoria
+            self.emit("STORE", f"R{reg}", lvalue.ID)
+        
         self.free_register()
 
     # ========================

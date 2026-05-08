@@ -23,7 +23,17 @@ class Compiler:
         self.ir_code = None
         self.binary_code = None
         self.errors = []
-        
+    
+    def get_preprocessed_code(self):
+        return self.source_code
+    
+    def get_assembly_code(self):
+        return self.ir_code
+    
+    def get_reloc_code(self):
+        return self.binary_code
+    
+    
     def compile(self, source_file: str) -> bool:
         """Compila un archivo completo"""
         try:
