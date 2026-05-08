@@ -81,7 +81,7 @@ class Compiler:
             if not self._assembly():
                 return False
             
-            print("\n✓ Compilación exitosa")
+            print("\nCompilación exitosa")
             return True
             
         except Exception as e:
@@ -100,7 +100,7 @@ class Compiler:
             self.errors.extend(errors)
             return False
         
-        print(f"✓ {len(self.tokens)} tokens generados")
+        print(f"{len(self.tokens)} tokens generados")
         return True
     
     def _syntactic_analysis(self) -> bool:
@@ -111,7 +111,7 @@ class Compiler:
         if self.ast is None:
             print("Error: No se pudo generar el AST")
             return False
-        print("✓ Árbol sintáctico generado exitosamente")
+        print("Árbol sintáctico generado exitosamente")
         return True
     
     def _semantic_analysis(self) -> bool:
@@ -129,7 +129,7 @@ class Compiler:
             return False
         
         if self.semantic_ok:
-            print("✓ Análisis semántico correcto")
+            print("Análisis semántico correcto")
             print(f"  Funciones: {list(semantic_analyzer.functions.keys())}")
             print(f"  Estructuras: {list(semantic_analyzer.structs.keys())}")
         else:
@@ -143,7 +143,7 @@ class Compiler:
         
         try:
             self.ir_code = code_gen.generate(self.ast, self.symbol_table)
-            print("✓ Código intermedio generado:")
+            print("Código intermedio generado:")
             print("-" * 60)
             for i, line in enumerate(self.ir_code.split('\n'), 1):
                 print(f"{i:3}: {line}")
@@ -159,7 +159,7 @@ class Compiler:
         try:
             self.binary_code = assemble_program(self.ir_code)
             
-            print("✓ Código de máquina generado:")
+            print("Código de máquina generado:")
             print("-" * 60)
             for i, line in enumerate(self.binary_code.split('\n')[:20], 1):
                 print(f"{i:3}: {line}")
@@ -177,7 +177,7 @@ class Compiler:
         if self.binary_code:
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(self.binary_code + '\n')
-            print(f"✓ Código binario guardado en: {output_file}")
+            print(f"Código binario guardado en: {output_file}")
 
 
 def main():
@@ -196,7 +196,7 @@ def main():
         compiler.save_binary(output_file)
         sys.exit(0)
     else:
-        print("\n✗ Compilación fallida")
+        print("\nCompilación fallida")
         sys.exit(1)
 
 
