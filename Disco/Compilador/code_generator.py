@@ -62,7 +62,7 @@ class CodeGenerator:
             if reg not in self.allocated_registers:
                 self.allocated_registers.add(reg)
                 return reg
-        raise Exception(f"Error: No hay registros disponibles. Máximo 15 registros (R1-R15). Se agotaron todos los registros.")
+        # raise Exception(f"Error: No hay registros disponibles. Máximo 15 registros (R1-R15). Se agotaron todos los registros.")
 
     def free_register(self, reg=None):
         """Libera un registro específico o el más recientemente asignado"""
@@ -205,6 +205,7 @@ class CodeGenerator:
                 index_reg = index_expr.accept(self)
                 # Sumar el índice a la dirección base
                 self.emit("ADD", f"R{base_reg}", f"R{index_reg}")
+                self.free_register(index_reg)
         
         return base_reg
 
@@ -226,6 +227,7 @@ class CodeGenerator:
             addr_reg = self._calculate_array_address(node)
             value_reg = self.allocate_register()
             self.emit("LOADI", f"R{value_reg}", f"R{addr_reg}")
+            self.free_register(addr_reg)  # Liberar el registro de dirección
             return value_reg  # El llamador debe liberar este registro cuando termine
 
         # Acceso a campo de estructura
