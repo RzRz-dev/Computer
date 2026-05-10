@@ -53,14 +53,7 @@ class FirstColumn():
 
         self.high_level_panel_btns = ButtonPanel(high_level_btns)
 
-        lex_btns = {
-            "Analisis lexico": {
-                "icon": ft.Icons.SEARCH,
-                "func": self._lexical_analysis
-            }
-        }
-
-        self.high_level_lex_btn = ButtonPanel(lex_btns)
+        
         self.assembly_code_panel_btns = ButtonPanel(assembly_btns)
         self.selected_file = ft.Text(style=AppStyles.file_text())
 
@@ -73,7 +66,6 @@ class FirstColumn():
                     self.high_level_code.code_block_comp,
                     self.selected_file,
                     self.high_level_panel_btns.button_panel_comp,
-                    self.high_level_lex_btn.button_panel_comp,
                     self.assembly_code.code_block_comp,
                     self.assembly_code_panel_btns.button_panel_comp
                 ]
@@ -86,7 +78,7 @@ class FirstColumn():
             allow_multiple=False,
             with_data=True,
             file_type=ft.FilePickerFileType.CUSTOM,
-            allowed_extensions=["txt"]
+            allowed_extensions=["txt", "c", "cpp", "py", "java", "asm"]
         )
 
         if not self.files:
