@@ -114,13 +114,17 @@ class FirstColumn():
         compilador = Compiler()
         source_code = self.high_level_code.code_editor.value
         compilador.compile(source_code)
-
-        preprocess_code = compilador.get_preprocessed_code()
-        assembly_code = compilador.get_assembly_code()
-        reloc_code = compilador.get_reloc_code()
-        self.high_level_code.code_editor.value = preprocess_code
-        self.assembly_code.code_editor.value = assembly_code
-        self.relocatable_code_block.code_editor.value = reloc_code
+        if compilador.get_errors():
+            self.relocatable_code_block.code_editor.value = "" 
+            for error in compilador.get_errors():
+                self.relocatable_code_block.code_editor.value += f"Error: {error}\n"
+        else:
+            preprocess_code = compilador.get_preprocessed_code()
+            assembly_code = compilador.get_assembly_code()
+            reloc_code = compilador.get_reloc_code()
+            self.high_level_code.code_editor.value = preprocess_code
+            self.assembly_code.code_editor.value = assembly_code
+            self.relocatable_code_block.code_editor.value = reloc_code
         self.page.update()
 
     def _preprocess_high_level_code(self, _=None):

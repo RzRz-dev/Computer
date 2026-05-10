@@ -33,6 +33,9 @@ class Compiler:
     def get_reloc_code(self):
         return self.binary_code
     
+    def get_errors(self) -> list:
+        return self.errors
+    
     def compile_file(self, source_file: str) -> bool:
         """Compila un archivo completo"""
         with open(source_file, 'r', encoding='utf-8') as f:
