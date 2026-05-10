@@ -1,8 +1,6 @@
 // Algoritmo de Euclides (restas sucesivas)
 
-func void main() {
-    int a = 48;
-    int b = 18;
+func int euclides(int a, int b) {
 
     while (a != b) {
         if (a > b) {
@@ -12,6 +10,5 @@ func void main() {
         }
     }
 
-    int gcd = a;
-    
+    return a;
 }

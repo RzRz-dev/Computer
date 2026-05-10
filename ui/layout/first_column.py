@@ -7,6 +7,7 @@ from ..styles.styles import AppStyles
 from Disco.Compilador.Assembler import assemble_program
 from Disco.Compilador.Preprocessor import preprocess_program
 from Disco.Compilador.lexical_analyzer import LexicalAnalyzer
+from Disco.Compilador.Compilador import Compiler
 
 class FirstColumn():
     def __init__(self, page: ft.Page, relocatable_code_block):
@@ -110,7 +111,16 @@ class FirstColumn():
         self.page.update()
 
     def _compile(self):
-        self.relocatable_code_block.code_editor.value = self.high_level_code.code_editor.value
+        compilador = Compiler()
+        source_code = self.high_level_code.code_editor.value
+        compilador.compile(source_code)
+
+        preprocess_code = compilador.get_preprocessed_code()
+        assembly_code = compilador.get_assembly_code()
+        reloc_code = compilador.get_reloc_code()
+        self.high_level_code.code_editor.value = preprocess_code
+        self.assembly_code.code_editor.value = assembly_code
+        self.relocatable_code_block.code_editor.value = reloc_code
         self.page.update()
 
     def _preprocess_high_level_code(self, _=None):

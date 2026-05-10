@@ -3,12 +3,12 @@ Compilador Principal - Integra todos los pasos de compilación
 Flujo: Léxico → Sintáctico → Semántico → Generación de Código → Ensamblador
 """
 
-from lexical_analyzer import LexicalAnalyzer
-from sintactic_analyzer import parse
-from semantic_analyzer import SemanticAnalyzer
-from code_generator import CodeGenerator
-from Assembler import assemble_program
-from Preprocessor import preprocess_program
+from .lexical_analyzer import LexicalAnalyzer
+from .sintactic_analyzer import parse
+from .semantic_analyzer import SemanticAnalyzer
+from .code_generator import CodeGenerator
+from .Assembler import assemble_program
+from .Preprocessor import preprocess_program
 import sys
 
 class Compiler:
@@ -33,13 +33,18 @@ class Compiler:
     def get_reloc_code(self):
         return self.binary_code
     
-    def compile(self, source_file: str) -> bool:
+    def compile_file(self, source_file: str) -> bool:
+        """Compila un archivo completo"""
+        with open(source_file, 'r', encoding='utf-8') as f:
+                self.source_code = f.read()
+
+        return self.compile(self.source_code)
+    
+    def compile(self, source_code: str) -> bool:
         """Compila un archivo completo"""
         try:
-            # 1. Lee el archivo
-            with open(source_file, 'r', encoding='utf-8') as f:
-                self.source_code = f.read()
-            
+            self.source_code = source_code
+
             # 2. Preprocesamiento
             print("=" * 60)
             print("FASE 1: PREPROCESAMIENTO")
@@ -192,7 +197,7 @@ def main():
     
     compiler = Compiler()
     
-    if compiler.compile(input_file):
+    if compiler.compile_file(input_file):
         compiler.save_binary(output_file)
         sys.exit(0)
     else:

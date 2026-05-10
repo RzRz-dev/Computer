@@ -1,6 +1,6 @@
 import ply.yacc as yacc
-from lexical_analyzer import LexicalAnalyzer
-import ast_nodes as ast
+from .lexical_analyzer import LexicalAnalyzer
+from . import ast_nodes as ast
 
 # Crea instancia del lexer
 lex_analyzer = LexicalAnalyzer()

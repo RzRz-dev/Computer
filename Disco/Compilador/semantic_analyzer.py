@@ -3,7 +3,7 @@ Análisis Semántico - Valida tipos, scopes y referencias
 Usa el patrón Visitor para recorrer el AST
 """
 
-from ast_nodes import *
+from .ast_nodes import *
 
 class SemanticAnalyzer:
     """Realiza análisis semántico del programa"""
