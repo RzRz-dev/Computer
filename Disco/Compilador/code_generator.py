@@ -714,6 +714,7 @@ class CodeGenerator:
     def visit_Call_node(self, node):
         for arg in node.args:
             reg = arg.accept(self)
+            self.emit("LOAD", f"R{reg}", f"{arg.ID}")  # Asegurar que el valor esté en el registro
             self.emit("PUSH", f"R{reg}")
             self.free_register(reg)
 
@@ -725,6 +726,8 @@ class CodeGenerator:
     def visit_Return_node(self, node):
         if node.expr_opt:
             reg = node.expr_opt.accept(self)
-            print(reg)
+            self.emit("CPY", "R1", f"R{reg}")  # Copiar el valor de retorno a R1
+            self.free_register(reg)
+            print("REgistroL: ",reg)
         self.emit("PUSH", "R0")  # Restaurar SP para main
         self.emit("RET")
