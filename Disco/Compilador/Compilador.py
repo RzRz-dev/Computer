@@ -114,8 +114,8 @@ class Compiler:
     def _syntactic_analysis(self) -> bool:
         """Realiza análisis sintáctico"""
         
-        self.ast, self.symbol_table = parse(self.source_code)
-
+        self.ast, self.symbol_table, errs= parse(self.source_code)
+        self.errors.extend(errs)
         if self.ast is None:
             print("Error: No se pudo generar el AST")
             return False

@@ -8,6 +8,9 @@ from ..components.button_panel import ButtonPanel
 from RAM.dataRam import ram
 from Utilities.execute import Execute
 from Disco.Compilador.link_loader import LinkLoader
+from CPU.registers import registers
+from CPU.pc import pc
+from CPU.flags import flags
 
 class SecondColumn:
     def __init__(self, page: ft.Page):
@@ -37,6 +40,10 @@ class SecondColumn:
             },
             "Detener ejecución":{
                 "icon": ft.Icons.BACK_HAND
+            },
+            "Reestablecer máquina": {
+                "icon": ft.Icons.REFRESH,
+                "func": self._reset_machine
             }
         }
 
@@ -162,6 +169,33 @@ class SecondColumn:
         self.ram_block.refresh()
         self.page.update()
         self._show_message(message, ft.Colors.GREEN_400)
+
+    def _reset_machine(self, _=None):
+        """Reset the entire machine to its initial state"""
+        # Reset CPU components
+        registers.reset()
+        ram.reset()
+        pc.reset()
+        flags.reset()
+        
+        # Reset UI state
+        self.base_address = "0"
+        self.band = False
+        self.execute = Execute()
+        
+        # Reset UI fields
+        self.entry_point_field.value = self.base_address
+        self.base_address_block.base_address.value = self.base_address
+        self.execution_state.value = "Aún no se ha ejecutado ningún programa."
+        self.relocatable_code.code_editor.value = ""
+        self.mod_ram_block.address_field.value = ""
+        self.mod_ram_block.word_content.value = ""
+        
+        # Refresh components
+        self.ram_block.refresh()
+        self.page.update()
+        
+        self._show_message("Máquina reestablecida a estado inicial", ft.Colors.BLUE_400)
 
     def _show_message(self, message: str, color: str):
         self.page.snack_bar = ft.SnackBar(content=ft.Text(message), bgcolor=color)

@@ -110,6 +110,7 @@ class FirstColumn():
             self.relocatable_code_block.code_editor.value = "" 
             for error in compilador.get_errors():
                 self.relocatable_code_block.code_editor.value += f"Error: {error}\n"
+                print(error)
         else:
             preprocess_code = compilador.get_preprocessed_code()
             assembly_code = compilador.get_assembly_code()

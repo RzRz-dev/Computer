@@ -79,5 +79,11 @@ class DataRAM:
         if self.stack_ptr == self.STACK_START:
             raise Exception("Stack is empty")
         return self.storage[self.stack_ptr]
+    
+    def reset(self):
+        """Reset RAM to initial state"""
+        self.storage = {}
+        self.heap_ptr = self.HEAP_START
+        self.stack_ptr = self.STACK_START
 
 ram = DataRAM()

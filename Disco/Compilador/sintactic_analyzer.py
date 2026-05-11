@@ -8,7 +8,7 @@ lexer = lex_analyzer.lexer
 
 # Obtiene los tokens del lexer
 tokens = lex_analyzer.tokens
-
+errores = list()
 symbol_table = lex_analyzer.symbol_table
 
 precedence = (
@@ -493,6 +493,7 @@ def p_empty(p):
 def p_error(p):
     if p:
         print(f"Error sintáctico en línea {p.lineno}: token inesperado '{p.value}' (tipo: {p.type})")
+        errores.append(f"Error sintáctico en línea {p.lineno}: token inesperado '{p.value}' (tipo: {p.type})")
     else:
         print("Error sintáctico: fin de archivo inesperado")
 
@@ -529,7 +530,7 @@ def parse(code: str):
     
     # Parsea el código
     ast = parser.parse(code, lexer=lexer)
-    return ast, symbol_table
+    return ast, symbol_table, errores
 
 if __name__ == "__main__":
     # Código de prueba
