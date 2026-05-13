@@ -10,6 +10,7 @@ class RamBlock:
         self.max_address = min(ram.MAX_ADDRESS, ram.UI_MAX_ADDRESS)
         self.visible_start = self.min_address
         self.visible_end = min(self.max_address, ram.DATA_START - 1)
+        self.highlight_address = None
         self._create_components()
         self._build_ram_block()
         self.refresh()
@@ -104,7 +105,7 @@ class RamBlock:
         self.range_start_field.value = f"{self.visible_start:0{self.address_hex_width}X}"
         self.range_end_field.value = f"{self.visible_end:0{self.address_hex_width}X}"
         self.ram_table.rows = [
-            self._build_row(address)
+            self._build_row(address, ft.Colors.GREEN_400 if address == self.highlight_address else None)
             for address in range(self.visible_start, self.visible_end + 1)
         ]
 
@@ -156,8 +157,10 @@ class RamBlock:
 
         return True, f"[{address:0{self.address_hex_width}X}] = {normalized_value}"
 
-    def _build_row(self, address: int):
+    def _build_row(self, address: int, highlight_color: str = None):
         current_word = ram.read(address)
+        text_color_value = highlight_color if highlight_color else None
+        
         return ft.DataRow(
             cells=[
                 ft.DataCell(ft.Text(f"{address:0{self.address_hex_width}X}", style=AppStyles.list_text())),
@@ -166,9 +169,9 @@ class RamBlock:
                         value=current_word,
                         dense=True,
                         capitalization=ft.TextCapitalization.CHARACTERS,
-                        max_length=ram.WORD_SIZE_HEX,
                         on_submit=lambda e, addr=address: self._on_cell_submit(e, addr),
                         on_blur=lambda e, addr=address: self._on_cell_submit(e, addr),
+                        text_style=ft.TextStyle(color=text_color_value) if text_color_value else None,
                     )
                 ),
             ]

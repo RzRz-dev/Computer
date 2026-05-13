@@ -62,8 +62,8 @@ class SecondColumn:
             label="Estado de registros y banderas",
             multiline=True,
             read_only=True,
-            min_lines=8,
-            max_lines=12,
+            min_lines=18,
+            max_lines=30,
             expand=True,
             value="Aún no se ha ejecutado ningún programa.",
         )
@@ -119,6 +119,7 @@ class SecondColumn:
         self.base_address = format(entry_point, "X")
         self.entry_point_field.value = self.base_address
         self.base_address_block.base_address.value = self.base_address
+        self.ram_block.highlight_address = None  # Limpiar resaltado
         self.ram_block.refresh()
         self.page.update()
         self._show_message(f"Programa cargado. Entry point: 0x{self.base_address}", ft.Colors.GREEN_400)
@@ -140,6 +141,7 @@ class SecondColumn:
         
         self.execute.set_auto_mode_value(True)
         self.execute.execute_program_auto()
+        self.ram_block.highlight_address = None  # Limpiar resaltado
         self.execution_state.value = self.execute.get_final_state_text()
         self.ram_block.refresh()
         self.page.update()
@@ -153,7 +155,10 @@ class SecondColumn:
         if self.execute.exceute_step() == 1:
             band = False
             pass
-        self.execution_state.value = self.execute.get_final_state_text()
+        # Mostrar estado actual con resaltado de la instrucción siendo ejecutada
+        current_pc = self.execute.program_counter.get_next_instruction()
+        self.ram_block.highlight_address = current_pc
+        self.execution_state.value = self.execute.get_final_state_text(highlight_pc=True)
         self.ram_block.refresh()
         self.page.update()
 
@@ -189,6 +194,7 @@ class SecondColumn:
         self.execution_state.value = "Aún no se ha ejecutado ningún programa."
         self.mod_ram_block.address_field.value = ""
         self.mod_ram_block.word_content.value = ""
+        self.ram_block.highlight_address = None  # Limpiar resaltado
         
         # Refresh components
         self.ram_block.refresh()

@@ -110,7 +110,7 @@ class Execute:
     def _print_final_state(self):
         print(self.get_final_state_text())
 
-    def get_final_state_text(self):
+    def get_final_state_text(self, highlight_pc: bool = False):
         lines = ["\n========= Final State ========="]
         lines.append("\n--- Registers ---")
         for reg, val in registers.values.items():
@@ -126,11 +126,7 @@ class Execute:
         lines.append("\n--- Flags ---")
         lines.append(f"  {flags}")
 
-        lines.append("\n--- RAM ---")
-        for addr in range(self.ram.CODE_START, self.ram.DATA_START):
-            value = self.ram.read(addr)
-            if value != "0" * self.ram.WORD_SIZE_HEX:
-                lines.append(f"  [{format(addr, '016X')}] = {value}")
+        
 
         return "\n".join(lines)
 
