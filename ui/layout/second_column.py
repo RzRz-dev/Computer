@@ -83,15 +83,30 @@ class SecondColumn:
                         self.link_load_btn.button_panel_comp
                     ]
                 ),
-                self.ram_block.ram_block_comp,
+                ft.Row(
+                    controls=[
+                        self.ram_block.ram_block_comp,
+                        ft.Column(
+                            controls=[
+                                ft.Container(
+                                    content=btn,
+                                    width=220
+                                ) for btn in self.execute_btns.button_panel_comp.controls
+                            ],
+                            horizontal_alignment=ft.CrossAxisAlignment.END,
+                            spacing=5
+                        )
+                    ],
+                    expand=True,
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                ),
                 self.mod_ram_block.mod_ram_block_comp,
                 self.entry_point_field,
                 ft.Container(
                     **AppStyles.list_view(),
                     padding=10,
                     content=self.execution_state,
-                ),
-                self.execute_btns.button_panel_comp
+                )
             ]),
             expand=2
         )

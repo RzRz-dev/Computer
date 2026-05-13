@@ -55,13 +55,6 @@ class RamBlock:
             **AppStyles.elevated_button(),
         )
 
-        self.execute_ram_btn = ft.ElevatedButton(
-            "Ejecutar RAM",
-            icon=ft.Icons.PLAY_ARROW,
-            on_click=self.on_execute,
-            **AppStyles.elevated_button(),
-        )
-
     def _build_ram_block(self):
         self.ram_block_comp=ft.Container(
             **AppStyles.container(),
@@ -81,10 +74,6 @@ class RamBlock:
                         height=400,
                         padding=10,
                         content=self.table_scroll
-                    ),
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.END,
-                        controls=[self.execute_ram_btn],
                     ),
                     ft.Text("Edite una celda o use el bloque de modificación para escribir en RAM.", style=AppStyles.file_text())
                 ]
