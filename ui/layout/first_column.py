@@ -26,10 +26,6 @@ class FirstColumn():
                 "icon": ft.Icons.UPLOAD_FILE,
                 "func": self._pick_text_file
             },
-            "Preprocesar": {
-                "icon": ft.Icons.AUTO_FIX_HIGH,
-                "func": self._preprocess_high_level_code
-            },
             "Compilar": {
                 "icon": ft.Icons.BUILD,
                 "func": self._compile
@@ -70,7 +66,7 @@ class FirstColumn():
                     self.assembly_code_panel_btns.button_panel_comp
                 ]
             ),
-            expand=True
+            expand=2
         )
 
     async def _pick_text_file(self, _: ft.Event[ft.Button]):

@@ -97,7 +97,7 @@ class SecondColumn:
                             spacing=5
                         )
                     ],
-                    expand=True,
+                    expand=2,
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                 ),
                 self.mod_ram_block.mod_ram_block_comp,
