@@ -187,7 +187,6 @@ class SecondColumn:
         self.entry_point_field.value = self.base_address
         self.base_address_block.base_address.value = self.base_address
         self.execution_state.value = "Aún no se ha ejecutado ningún programa."
-        self.relocatable_code.code_editor.value = ""
         self.mod_ram_block.address_field.value = ""
         self.mod_ram_block.word_content.value = ""
         
