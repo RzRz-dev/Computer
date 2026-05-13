@@ -1,3 +1,4 @@
+import struct
 from CPU.decoder import Decoder
 from RAM.dataRam import ram
 from CPU.pc import ProgramCounter
@@ -113,7 +114,12 @@ class Execute:
         lines = ["\n========= Final State ========="]
         lines.append("\n--- Registers ---")
         for reg, val in registers.values.items():
-            lines.append(f"  R{reg} = {val}  (dec: {int(val, 16)})")
+            dec_val = int(val, 16)
+            try:
+                double_val = struct.unpack('!d', bytes.fromhex(val))[0]
+                lines.append(f"  R{reg} = {val}  (dec: {dec_val}, double: {double_val})")
+            except:
+                lines.append(f"  R{reg} = {val}  (dec: {dec_val})")
 
         lines.append(f"\n  SP = {format(registers.stack_pointer, '016X')}")
         lines.append(f"  PC = {self.program_counter.get_next_instruction_hex()}")

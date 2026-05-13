@@ -518,6 +518,8 @@ def parse(code: str):
     Returns:
         Árbol sintáctico o None si hay errores
     """
+    
+    errores.clear()
     # Tokeniza el código
     tokens, lex_errors = lex_analyzer.tokenize(code)
     
